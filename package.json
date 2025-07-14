@@ -1,0 +1,22 @@
+{
+  "name": "scrap-calculator",
+  "version": "1.0.0",
+  "description": "Progressive Web App for calculating and tracking weekly merge goals in Scraps 2 game",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python -m http.server 8000",
+    "build": "echo 'Building for production...' && mkdir -p dist && cp -r *.html src assets manifest.json sw.js dist/",
+    "deploy": "npm run build && gh-pages -d dist",
+    "start": "npm run dev",
+    "test": "echo 'No tests specified yet'"
+  },
+  "keywords": ["pwa", "calculator", "scraps2", "merge", "game"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "gh-pages": "^6.0.0"
+  },
+  "dependencies": {
+    "chart.js": "^4.4.0"
+  }
+}
