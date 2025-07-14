@@ -1,11 +1,17 @@
 // Service Worker for Scrap Calculator PWA
-const CACHE_NAME = 'scrap-calculator-v2';
+const CACHE_NAME = 'scrap-calculator-v3';
 const urlsToCache = [
     '/',
     '/index.html',
     '/src/styles/main.css',
+    '/src/js/services/CalculationService.js',
+    '/src/js/services/DisplayManager.js',
+    '/src/js/services/DataManager.js',
+    '/src/js/AppController.js',
     '/src/js/app.js',
     '/src/js/storage.js',
+    '/src/js/sync.js',
+    '/src/js/charts.js',
     '/manifest.json'
 ];
 
