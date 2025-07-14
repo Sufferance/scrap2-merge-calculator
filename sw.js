@@ -10,7 +10,6 @@ const urlsToCache = [
     '/src/js/AppController.js',
     '/src/js/app.js',
     '/src/js/storage.js',
-    '/src/js/sync.js',
     '/src/js/charts.js',
     '/manifest.json'
 ];
