@@ -4,7 +4,7 @@
   "description": "Progressive Web App for calculating and tracking weekly merge goals in Scraps 2 game",
   "main": "index.html",
   "scripts": {
-    "dev": "npx http-server -p 3000 -c-1",
+    "dev": "npx http-server -p 3000",
     "build": "echo 'Building for production...' && mkdir -p dist && cp -r *.html src assets manifest.json sw.js dist/",
     "deploy": "npm run build && gh-pages -d dist",
     "start": "npm run dev",
