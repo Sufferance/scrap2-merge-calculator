@@ -36,6 +36,8 @@ class DisplayManager {
             configContent: document.getElementById('config-content'),
             
             // Sync elements
+            syncToggle: document.getElementById('sync-toggle'),
+            syncContent: document.getElementById('sync-content'),
             uploadBtn: document.getElementById('upload-data-btn'),
             downloadBtn: document.getElementById('download-data-btn'),
             clearSyncBtn: document.getElementById('clear-sync-btn'),

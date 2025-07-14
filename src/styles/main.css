@@ -258,6 +258,37 @@ body {
     gap: 0.5rem;
 }
 
+/* Collapsible Sync Section */
+.sync-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+.sync-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+.sync-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+.sync-content {
+    padding: 1.5rem;
+    max-height: 1000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+.sync-content.collapsed {
+    max-height: 0;
+    padding: 0 1.5rem;
+}
+
 .goal-config label, .rate-config label {
     font-weight: 500;
     color: var(--text-primary);
@@ -578,6 +609,18 @@ body {
         padding: 0 1rem;
     }
     
+    .sync-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .sync-content {
+        padding: 1rem;
+    }
+    
+    .sync-content.collapsed {
+        padding: 0 1rem;
+    }
+    
     .large-input {
         font-size: 1.2rem;
         padding: 0.75rem;
@@ -654,6 +697,18 @@ body {
     }
     
     .config-content.collapsed {
+        padding: 0 0.75rem;
+    }
+    
+    .sync-header {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .sync-content {
+        padding: 0.75rem;
+    }
+    
+    .sync-content.collapsed {
         padding: 0 0.75rem;
     }
     

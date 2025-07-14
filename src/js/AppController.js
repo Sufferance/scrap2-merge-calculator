@@ -64,6 +64,9 @@ class AppController {
         // Collapsible config panel
         this.setupCollapsibleConfig();
         
+        // Collapsible sync panel
+        this.setupCollapsibleSync();
+        
         // Sync functionality
         this.setupSyncListeners();
     }
@@ -159,6 +162,37 @@ class AppController {
                 configContent.classList.add('collapsed');
                 toggleArrow?.classList.add('rotated');
                 localStorage.setItem('configCollapsed', 'true');
+            }
+        });
+    }
+
+    setupCollapsibleSync() {
+        const syncToggle = this.services.display.elements.syncToggle;
+        const syncContent = this.services.display.elements.syncContent;
+        
+        if (!syncToggle || !syncContent) return;
+
+        const toggleArrow = syncToggle.querySelector('.toggle-arrow');
+        
+        // Load saved state (default to expanded)
+        const isCollapsed = localStorage.getItem('syncCollapsed') === 'true';
+        
+        if (isCollapsed) {
+            syncContent.classList.add('collapsed');
+            toggleArrow?.classList.add('rotated');
+        }
+        
+        syncToggle.addEventListener('click', () => {
+            const isCurrentlyCollapsed = syncContent.classList.contains('collapsed');
+            
+            if (isCurrentlyCollapsed) {
+                syncContent.classList.remove('collapsed');
+                toggleArrow?.classList.remove('rotated');
+                localStorage.setItem('syncCollapsed', 'false');
+            } else {
+                syncContent.classList.add('collapsed');
+                toggleArrow?.classList.add('rotated');
+                localStorage.setItem('syncCollapsed', 'true');
             }
         });
     }

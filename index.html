@@ -136,9 +136,12 @@
             </section>
 
             <section class="sync-section">
-                <h2>Cross-Device Sync</h2>
-                
-                <div class="sync-controls">
+                <div class="sync-header" id="sync-toggle">
+                    <h2>Cross-Device Sync</h2>
+                    <span class="toggle-arrow">▼</span>
+                </div>
+                <div class="sync-content" id="sync-content">
+                    <div class="sync-controls">
                     <div class="sync-upload">
                         <h3>Upload Data</h3>
                         <p>Generate a 6-character code to sync your data across devices</p>
@@ -163,6 +166,7 @@
                         <span id="sync-status-text">No sync data available</span>
                         <button id="clear-sync-btn" class="clear-btn" style="display: none;">Clear Sync Data</button>
                     </div>
+                </div>
                 </div>
             </section>
         </main>
