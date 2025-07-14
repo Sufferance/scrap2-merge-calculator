@@ -51,6 +51,10 @@ class AppController {
             this.handleTargetInput(e);
         });
 
+        // Reset state button
+        document.getElementById('reset-state-btn')?.addEventListener('click', () => {
+            this.handleResetState();
+        });
 
         // Touch gestures for mobile
         this.setupTouchGestures();
@@ -87,6 +91,38 @@ class AppController {
         const newValue = parseInt(e.target.value) || 50000;
         this.services.data.setTargetGoal(newValue);
         this.updateCalculationsAndSave();
+    }
+
+    async handleResetState() {
+        const inputElement = this.services.display.elements.currentMerges;
+        const inputValue = parseInt(inputElement?.value) || 0;
+        
+        if (inputValue === 0) {
+            alert('Please enter a merge count in the input field first.');
+            return;
+        }
+        
+        const confirmMessage = `This will sync your stored merge count to match the input value of ${inputValue.toLocaleString()}. Are you sure?`;
+        
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+        
+        try {
+            // Force set the merge count to match input value
+            this.services.data.forceSetCurrentMerges(inputValue);
+            
+            // Save the updated state
+            await this.services.data.saveCurrentProgress();
+            
+            // Update the UI to reflect the changes
+            this.updateCalculationsAndSave();
+            
+            alert('Merge count successfully synced!');
+        } catch (error) {
+            console.error('Error during reset:', error);
+            alert('Error syncing merge count. Please try again.');
+        }
     }
 
     showMergeIncrement(increment) {

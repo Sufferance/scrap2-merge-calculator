@@ -1181,8 +1181,24 @@ input:focus {
     transition: var(--transition);
 }
 
+.reset-btn {
+    background: var(--warning-color);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-top: 0.5rem;
+}
+
 .clear-btn:hover {
     background: #f44336;
+}
+
+.reset-btn:hover {
+    background: #f57c00;
 }
 
 /* Light theme specific adjustments */
