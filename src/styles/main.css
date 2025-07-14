@@ -22,6 +22,24 @@
     --transition: all 0.3s ease;
 }
 
+/* Dark theme variables */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --primary-color: #42A5F5;
+        --primary-dark: #1E88E5;
+        --secondary-color: #66BB6A;
+        --warning-color: #FFA726;
+        --error-color: #EF5350;
+        --background-color: #121212;
+        --surface-color: #1E1E1E;
+        --text-primary: #FFFFFF;
+        --text-secondary: #B0B0B0;
+        --border-color: #404040;
+        --shadow: 0 2px 4px rgba(0,0,0,0.3);
+        --shadow-hover: 0 4px 8px rgba(0,0,0,0.4);
+    }
+}
+
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     line-height: 1.6;
@@ -803,10 +821,11 @@ input:focus {
     font-family: 'Courier New', monospace;
     font-weight: bold;
     letter-spacing: 0.1em;
-    background: rgba(255, 255, 255, 0.8);
+    background: var(--border-color);
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
     font-size: 1.1em;
+    color: var(--text-primary);
 }
 
 .sync-status {
@@ -849,6 +868,13 @@ input:focus {
 
 .clear-btn:hover {
     background: #d32f2f;
+}
+
+/* Dark theme specific adjustments */
+@media (prefers-color-scheme: dark) {
+    .clear-btn:hover {
+        background: #f44336;
+    }
 }
 
 /* Responsive adjustments for sync section */
