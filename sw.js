@@ -1,5 +1,5 @@
 // Service Worker for Scrap Calculator PWA
-const CACHE_NAME = 'scrap-calculator-v1';
+const CACHE_NAME = 'scrap-calculator-v2';
 const urlsToCache = [
     '/',
     '/index.html',
@@ -43,19 +43,38 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// Fetch event - serve from cache, fallback to network
+// Fetch event - network first, fallback to cache (better for development)
 self.addEventListener('fetch', (event) => {
+    // Skip caching for unsupported schemes
+    if (!event.request.url.startsWith('http')) {
+        return;
+    }
+    
     event.respondWith(
-        caches.match(event.request)
+        fetch(event.request)
             .then((response) => {
-                // Return cached version or fetch from network
-                return response || fetch(event.request);
+                // If network succeeds, update cache and return response
+                if (response.status === 200) {
+                    const responseClone = response.clone();
+                    caches.open(CACHE_NAME)
+                        .then((cache) => {
+                            cache.put(event.request, responseClone);
+                        });
+                }
+                return response;
             })
             .catch(() => {
-                // If both cache and network fail, return offline page
-                if (event.request.destination === 'document') {
-                    return caches.match('/index.html');
-                }
+                // If network fails, try cache
+                return caches.match(event.request)
+                    .then((response) => {
+                        if (response) {
+                            return response;
+                        }
+                        // If both fail and it's a document request, return offline page
+                        if (event.request.destination === 'document') {
+                            return caches.match('/index.html');
+                        }
+                    });
             })
     );
 });

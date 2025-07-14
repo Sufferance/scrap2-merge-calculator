@@ -239,23 +239,9 @@ class ScrapCalculator {
             `${averageHoursPerDay.toFixed(1)}h`;
         document.getElementById('hours-per-day').textContent = dailyHoursText;
 
-        // Update status
-        const statusElement = document.getElementById('on-track-status');
-        statusElement.classList.remove('on-track', 'close', 'behind');
-        
-        if (mergesNeeded <= 0) {
-            statusElement.textContent = 'Goal Reached!';
-            statusElement.classList.add('on-track');
-        } else if (isOnTrack) {
-            statusElement.textContent = 'On Track';
-            statusElement.classList.add('on-track');
-        } else if (currentPace >= requiredPace * 0.8) {
-            statusElement.textContent = 'Close';
-            statusElement.classList.add('close');
-        } else {
-            statusElement.textContent = 'Behind';
-            statusElement.classList.add('behind');
-        }
+        // Update enhanced status
+        const statusInfo = this.calculateEnhancedStatus(results);
+        this.updateStatusDisplay(statusInfo);
 
         // Update pace displays
         const currentPaceElement = document.getElementById('current-pace');
@@ -268,27 +254,191 @@ class ScrapCalculator {
         } else {
             requiredPaceElement.textContent = `Required pace: ${Math.round(requiredPace).toLocaleString()}/hr`;
         }
+        
+        // Update predictive finish time
+        this.updatePredictiveFinishTime(results);
 
         // Update result card colors based on status
-        this.updateCardColors(results);
+        this.updateCardColors(statusInfo);
     }
 
-    updateCardColors(results) {
+    calculateEnhancedStatus(results) {
+        const { mergesNeeded, currentPace, requiredPace, hoursRemaining } = results;
+        const progressPercentage = (this.currentMerges / this.targetGoal) * 100;
+        
+        if (mergesNeeded <= 0) {
+            return {
+                status: 'completed',
+                text: 'Goal Reached!',
+                className: 'completed',
+                paceRatio: 1,
+                level: 'excellent'
+            };
+        }
+        
+        const paceRatio = currentPace / requiredPace;
+        const timeRatio = hoursRemaining / (7 * 24); // Fraction of week remaining
+        
+        // Enhanced status categories with more granular thresholds
+        if (paceRatio >= 1.5) {
+            return {
+                status: 'excellent',
+                text: 'Excellent Pace',
+                className: 'excellent',
+                paceRatio,
+                level: 'excellent'
+            };
+        } else if (paceRatio >= 1.2) {
+            return {
+                status: 'good',
+                text: 'Good Pace',
+                className: 'good',
+                paceRatio,
+                level: 'good'
+            };
+        } else if (paceRatio >= 1.0) {
+            return {
+                status: 'on-track',
+                text: 'On Track',
+                className: 'on-track',
+                paceRatio,
+                level: 'on-track'
+            };
+        } else if (paceRatio >= 0.85) {
+            return {
+                status: 'close',
+                text: 'Close',
+                className: 'close',
+                paceRatio,
+                level: 'close'
+            };
+        } else if (paceRatio >= 0.6) {
+            return {
+                status: 'behind',
+                text: 'Behind',
+                className: 'behind',
+                paceRatio,
+                level: 'behind'
+            };
+        } else {
+            return {
+                status: 'critical',
+                text: 'Critical',
+                className: 'critical',
+                paceRatio,
+                level: 'critical'
+            };
+        }
+    }
+
+    updateStatusDisplay(statusInfo) {
+        const statusElement = document.getElementById('on-track-status');
+        
+        // Remove all status classes
+        statusElement.classList.remove('on-track', 'close', 'behind', 'excellent', 'good', 'critical', 'completed');
+        
+        // Add new status class with animation
+        statusElement.classList.add(statusInfo.className);
+        statusElement.textContent = statusInfo.text;
+        
+        // Add subtle animation for status changes
+        statusElement.style.transform = 'scale(1.05)';
+        setTimeout(() => {
+            statusElement.style.transform = 'scale(1)';
+        }, 200);
+    }
+
+    updateCardColors(statusInfo) {
         const cards = document.querySelectorAll('.result-card');
         
         cards.forEach(card => {
-            card.classList.remove('on-track', 'close', 'behind');
+            // Remove all status classes
+            card.classList.remove('on-track', 'close', 'behind', 'excellent', 'good', 'critical', 'completed');
             
-            if (results.mergesNeeded <= 0) {
-                card.classList.add('on-track');
-            } else if (results.isOnTrack) {
-                card.classList.add('on-track');
-            } else if (results.currentPace >= results.requiredPace * 0.8) {
-                card.classList.add('close');
-            } else {
-                card.classList.add('behind');
-            }
+            // Add new status class
+            card.classList.add(statusInfo.className);
         });
+    }
+
+    updatePredictiveFinishTime(results) {
+        const { mergesNeeded, currentPace, hoursRemaining } = results;
+        const finishTimeElement = document.getElementById('predicted-finish-time');
+        
+        if (!finishTimeElement) {
+            // Create the element if it doesn't exist
+            this.createPredictiveFinishTimeElement();
+            return this.updatePredictiveFinishTime(results);
+        }
+        
+        if (mergesNeeded <= 0) {
+            finishTimeElement.textContent = 'Goal completed!';
+            finishTimeElement.className = 'predicted-finish completed';
+            return;
+        }
+        
+        if (currentPace <= 0) {
+            finishTimeElement.textContent = 'No progress data';
+            finishTimeElement.className = 'predicted-finish no-data';
+            return;
+        }
+        
+        const hoursToFinish = mergesNeeded / currentPace;
+        const finishDate = new Date(Date.now() + (hoursToFinish * 60 * 60 * 1000));
+        const deadlineDate = this.weekEndDate;
+        
+        // Format the predicted finish time
+        const finishTime = finishDate.toLocaleString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
+        
+        // Determine if we'll finish on time
+        const willFinishOnTime = finishDate <= deadlineDate;
+        const timeDifference = Math.abs(finishDate - deadlineDate) / (1000 * 60 * 60); // hours
+        
+        let statusClass = 'predicted-finish ';
+        let statusText = '';
+        
+        if (willFinishOnTime) {
+            if (timeDifference > 24) {
+                statusClass += 'excellent';
+                statusText = `Will finish ${finishTime} (${Math.round(timeDifference)}h early)`;
+            } else if (timeDifference > 6) {
+                statusClass += 'good';
+                statusText = `Will finish ${finishTime} (${Math.round(timeDifference)}h early)`;
+            } else {
+                statusClass += 'on-track';
+                statusText = `Will finish ${finishTime} (on time)`;
+            }
+        } else {
+            if (timeDifference > 24) {
+                statusClass += 'critical';
+                statusText = `Will finish ${finishTime} (${Math.round(timeDifference)}h late)`;
+            } else {
+                statusClass += 'behind';
+                statusText = `Will finish ${finishTime} (${Math.round(timeDifference)}h late)`;
+            }
+        }
+        
+        finishTimeElement.textContent = statusText;
+        finishTimeElement.className = statusClass;
+    }
+
+    createPredictiveFinishTimeElement() {
+        // Find the pace displays section
+        const paceSection = document.querySelector('.pace-displays') || document.querySelector('#current-pace').parentElement;
+        
+        if (paceSection) {
+            const finishTimeElement = document.createElement('div');
+            finishTimeElement.id = 'predicted-finish-time';
+            finishTimeElement.className = 'predicted-finish';
+            finishTimeElement.textContent = 'Calculating...';
+            
+            paceSection.appendChild(finishTimeElement);
+        }
     }
 
     async saveData() {
