@@ -38,13 +38,11 @@ class DisplayManager {
             // Sync elements
             syncToggle: document.getElementById('sync-toggle'),
             syncContent: document.getElementById('sync-content'),
-            uploadBtn: document.getElementById('upload-data-btn'),
-            downloadBtn: document.getElementById('download-data-btn'),
-            clearSyncBtn: document.getElementById('clear-sync-btn'),
-            syncCodeInput: document.getElementById('sync-code-input'),
-            uploadResult: document.getElementById('upload-result'),
-            downloadResult: document.getElementById('download-result'),
-            syncStatusText: document.getElementById('sync-status-text'),
+            exportBtn: document.getElementById('export-data-btn'),
+            importBtn: document.getElementById('import-data-btn'),
+            importFileInput: document.getElementById('import-file-input'),
+            exportResult: document.getElementById('export-result'),
+            importResult: document.getElementById('import-result'),
             
             // Container elements
             resultCards: document.querySelectorAll('.result-card')
@@ -330,89 +328,35 @@ class DisplayManager {
     updateSyncDisplay(result, type) {
         let resultElement;
         
-        if (type === 'upload') {
-            resultElement = this.elements.uploadResult;
-            if (result.success) {
-                resultElement.innerHTML = `
-                    <div class="sync-success">
-                        <strong>Success!</strong> Your sync code is: <span class="sync-code">${result.syncCode}</span>
-                        <br><small>Expires: ${new Date(result.expiresAt).toLocaleDateString()}</small>
-                    </div>
-                `;
-            } else {
-                resultElement.innerHTML = `
-                    <div class="sync-error">
-                        <strong>Error:</strong> ${result.error}
-                    </div>
-                `;
-            }
-        } else if (type === 'download') {
-            resultElement = this.elements.downloadResult;
-            if (result.success) {
-                resultElement.innerHTML = `
-                    <div class="sync-success">
-                        <strong>Success!</strong> Data downloaded successfully
-                        <br><small>From device: ${result.deviceId}</small>
-                        <br><small>Uploaded: ${new Date(result.uploadedAt).toLocaleDateString()}</small>
-                    </div>
-                `;
-            } else {
-                resultElement.innerHTML = `
-                    <div class="sync-error">
-                        <strong>Error:</strong> ${result.error}
-                    </div>
-                `;
-            }
+        if (type === 'export') {
+            resultElement = this.elements.exportResult;
+        } else if (type === 'import') {
+            resultElement = this.elements.importResult;
         }
-    }
-
-    updateSyncStatus(status) {
-        if (!this.elements.syncStatusText) return;
         
-        if (status.hasSync) {
-            this.elements.syncStatusText.innerHTML = `
-                Last sync: ${status.lastSyncTime ? status.lastSyncTime.toLocaleDateString() : 'Unknown'}
-                <br>Code: ${status.lastSyncCode}
-                <br>Device: ${status.deviceId}
+        if (!resultElement) return;
+        
+        if (result.success) {
+            resultElement.innerHTML = `
+                <div class="sync-success">
+                    <strong>Success!</strong> ${result.message || 'Operation completed successfully'}
+                </div>
             `;
-            if (this.elements.clearSyncBtn) {
-                this.elements.clearSyncBtn.style.display = 'inline-block';
-            }
         } else {
-            this.elements.syncStatusText.textContent = 'No sync data available';
-            if (this.elements.clearSyncBtn) {
-                this.elements.clearSyncBtn.style.display = 'none';
-            }
+            resultElement.innerHTML = `
+                <div class="sync-error">
+                    <strong>Error:</strong> ${result.error}
+                </div>
+            `;
         }
     }
 
     clearSyncResults() {
-        if (this.elements.uploadResult) {
-            this.elements.uploadResult.innerHTML = '';
+        if (this.elements.exportResult) {
+            this.elements.exportResult.innerHTML = '';
         }
-        if (this.elements.downloadResult) {
-            this.elements.downloadResult.innerHTML = '';
-        }
-    }
-
-    setSyncButtonState(buttonType, disabled, text) {
-        let button;
-        
-        if (buttonType === 'upload') {
-            button = this.elements.uploadBtn;
-        } else if (buttonType === 'download') {
-            button = this.elements.downloadBtn;
-        }
-        
-        if (button) {
-            button.disabled = disabled;
-            button.textContent = text;
-        }
-    }
-
-    clearSyncCodeInput() {
-        if (this.elements.syncCodeInput) {
-            this.elements.syncCodeInput.value = '';
+        if (this.elements.importResult) {
+            this.elements.importResult.innerHTML = '';
         }
     }
 

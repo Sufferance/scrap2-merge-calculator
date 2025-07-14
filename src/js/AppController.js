@@ -235,123 +235,114 @@ class AppController {
     }
 
     setupSyncListeners() {
-        // Upload data button
-        this.services.display.elements.uploadBtn?.addEventListener('click', async () => {
-            await this.handleSyncUpload();
+        // Export data button
+        this.services.display.elements.exportBtn?.addEventListener('click', async () => {
+            await this.handleExportData();
         });
 
-        // Download data button
-        this.services.display.elements.downloadBtn?.addEventListener('click', async () => {
-            await this.handleSyncDownload();
+        // Import data button
+        this.services.display.elements.importBtn?.addEventListener('click', () => {
+            this.services.display.elements.importFileInput?.click();
         });
 
-        // Clear sync data button
-        this.services.display.elements.clearSyncBtn?.addEventListener('click', async () => {
-            await this.handleClearSync();
+        // File input change handler
+        this.services.display.elements.importFileInput?.addEventListener('change', async (e) => {
+            await this.handleImportData(e);
         });
-
-        // Auto-uppercase sync code input
-        this.services.display.elements.syncCodeInput?.addEventListener('input', (e) => {
-            e.target.value = e.target.value.toUpperCase();
-        });
-
-        // Update sync status on load
-        this.updateSyncStatus();
     }
 
-    async handleSyncUpload() {
-        this.services.display.setSyncButtonState('upload', true, 'Uploading...');
+    async handleExportData() {
+        const exportBtn = this.services.display.elements.exportBtn;
+        const originalText = exportBtn?.textContent;
         
         try {
-            if (!window.syncManager) {
-                throw new Error('Sync manager not available');
+            if (exportBtn) {
+                exportBtn.disabled = true;
+                exportBtn.textContent = 'Exporting...';
             }
             
-            const result = await window.syncManager.uploadData();
-            this.services.display.updateSyncDisplay(result, 'upload');
+            const data = await this.services.data.exportData();
             
-            if (result.success) {
-                this.updateSyncStatus();
-            }
+            // Create and download file
+            const jsonString = JSON.stringify(data, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const timestamp = new Date().toISOString().slice(0, 16).replace(/[:]/g, '-');
+            const filename = `scraps-calculator-backup-${timestamp}.json`;
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.services.display.updateSyncDisplay({
+                success: true,
+                message: `Data exported successfully as ${filename}`
+            }, 'export');
+            
         } catch (error) {
+            console.error('Export failed:', error);
             this.services.display.updateSyncDisplay({
                 success: false,
                 error: error.message
-            }, 'upload');
+            }, 'export');
         } finally {
-            this.services.display.setSyncButtonState('upload', false, 'Generate Sync Code');
+            if (exportBtn) {
+                exportBtn.disabled = false;
+                exportBtn.textContent = originalText;
+            }
         }
     }
 
-    async handleSyncDownload() {
-        const syncCodeInput = this.services.display.elements.syncCodeInput;
-        const syncCode = syncCodeInput?.value.trim().toUpperCase();
-        
-        if (!syncCode) {
-            this.services.display.updateSyncDisplay({
-                success: false,
-                error: 'Please enter a sync code'
-            }, 'download');
-            return;
-        }
-        
-        if (!window.syncManager?.validateSyncCode(syncCode)) {
-            this.services.display.updateSyncDisplay({
-                success: false,
-                error: 'Invalid sync code format'
-            }, 'download');
-            return;
-        }
-        
-        this.services.display.setSyncButtonState('download', true, 'Downloading...');
+    async handleImportData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
         
         try {
-            const result = await window.syncManager.downloadData(syncCode);
-            this.services.display.updateSyncDisplay(result, 'download');
+            const text = await file.text();
+            const data = JSON.parse(text);
             
-            if (result.success) {
-                // Reload data and update UI
-                await this.services.data.loadAllData();
-                this.updateUI();
-                this.updateSyncStatus();
-                
-                // Clear input
-                this.services.display.clearSyncCodeInput();
+            // Validate data structure
+            if (!data.version || !data.exportedAt) {
+                throw new Error('Invalid backup file format');
             }
+            
+            // Confirm import
+            const confirmMsg = `Import data from ${new Date(data.exportedAt).toLocaleString()}? This will replace your current data.`;
+            if (!confirm(confirmMsg)) {
+                return;
+            }
+            
+            await this.services.data.importData(data);
+            
+            // Reload UI
+            await this.services.data.loadAllData();
+            this.updateUI();
+            
+            this.services.display.updateSyncDisplay({
+                success: true,
+                message: 'Data imported successfully'
+            }, 'import');
+            
+            // Update file name display
+            const fileNameSpan = document.getElementById('selected-file');
+            if (fileNameSpan) {
+                fileNameSpan.textContent = `✓ ${file.name}`;
+            }
+            
         } catch (error) {
+            console.error('Import failed:', error);
             this.services.display.updateSyncDisplay({
                 success: false,
                 error: error.message
-            }, 'download');
+            }, 'import');
         } finally {
-            this.services.display.setSyncButtonState('download', false, 'Download Data');
-        }
-    }
-
-    async handleClearSync() {
-        if (!confirm('Are you sure you want to clear sync data? This will remove the connection to your sync code.')) {
-            return;
-        }
-        
-        try {
-            if (window.syncManager) {
-                await window.syncManager.clearSyncData();
-                this.updateSyncStatus();
-                this.services.display.clearSyncResults();
-            }
-        } catch (error) {
-            console.error('Error clearing sync data:', error);
-        }
-    }
-
-    async updateSyncStatus() {
-        try {
-            if (!window.syncManager) return;
-            
-            const status = await window.syncManager.getSyncStatus();
-            this.services.display.updateSyncStatus(status);
-        } catch (error) {
-            console.error('Error updating sync status:', error);
+            // Clear file input
+            event.target.value = '';
         }
     }
 

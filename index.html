@@ -141,29 +141,23 @@
                 </div>
                 <div class="collapsible-content" id="sync-content">
                     <div class="sync-controls">
-                    <div class="sync-upload">
-                        <h3>Upload Data</h3>
-                        <p>Generate a 6-character code to sync your data across devices</p>
-                        <button id="upload-data-btn" class="sync-btn">Generate Sync Code</button>
-                        <div id="upload-result" class="sync-result"></div>
-                    </div>
-                    
-                    <div class="sync-download">
-                        <h3>Download Data</h3>
-                        <p>Enter a sync code to download data from another device</p>
-                        <div class="sync-input-group">
-                            <input type="text" id="sync-code-input" placeholder="Enter 6-character code" maxlength="6">
-                            <button id="download-data-btn" class="sync-btn">Download Data</button>
+                        <div class="export-section">
+                            <h3>Export Data</h3>
+                            <p>Download your progress data as a JSON file for backup or transfer</p>
+                            <button id="export-data-btn" class="sync-btn">Download JSON File</button>
+                            <div id="export-result" class="sync-result"></div>
                         </div>
-                        <div id="download-result" class="sync-result"></div>
-                    </div>
-                </div>
-                
-                <div class="sync-status" id="sync-status">
-                    <h3>Sync Status</h3>
-                    <div class="status-info">
-                        <span id="sync-status-text">No sync data available</span>
-                        <button id="clear-sync-btn" class="clear-btn" style="display: none;">Clear Sync Data</button>
+                        
+                        <div class="import-section">
+                            <h3>Import Data</h3>
+                            <p>Upload a JSON file to restore your progress data</p>
+                            <div class="file-input-group">
+                                <input type="file" id="import-file-input" accept=".json" style="display: none;">
+                                <button id="import-data-btn" class="sync-btn">Choose JSON File</button>
+                                <span id="selected-file" class="file-name"></span>
+                            </div>
+                            <div id="import-result" class="sync-result"></div>
+                        </div>
                     </div>
                 </div>
                 </div>
@@ -178,7 +172,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="src/js/storage.js"></script>
-    <script src="src/js/sync.js"></script>
     <script src="src/js/services/CalculationService.js"></script>
     <script src="src/js/services/DisplayManager.js"></script>
     <script src="src/js/services/DataManager.js"></script>
