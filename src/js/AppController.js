@@ -224,8 +224,6 @@ class AppController {
     }
 
     async handleSyncUpload() {
-        const uploadBtn = this.services.display.elements.uploadBtn;
-        
         this.services.display.setSyncButtonState('upload', true, 'Uploading...');
         
         try {
@@ -532,11 +530,9 @@ class AppController {
         const trend = this.calculateTrend(recentWeeks);
         
         const currentMerges = this.services.data.getCurrentMerges();
-        const targetGoal = this.services.data.getTargetGoal();
         const weekStartDate = this.services.data.getWeekStartDate();
         const weekEndDate = this.services.data.getWeekEndDate();
         
-        const currentWeekProgress = currentMerges / targetGoal;
         const timeProgress = (new Date() - weekStartDate) / (weekEndDate - weekStartDate);
         
         const projectedFinalMerges = currentMerges + (currentMerges / timeProgress) * (1 - timeProgress);
