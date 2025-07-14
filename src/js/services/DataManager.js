@@ -177,6 +177,48 @@ class DataManager {
         this.updateWeekBounds();
     }
 
+    // Force set merge count to match input (allows decreases)
+    forceSetCurrentMerges(value) {
+        this.state.currentMerges = Math.max(0, parseInt(value) || 0);
+        this.updateCurrentDayTotal();
+    }
+
+    async resetStateToCurrentMerges() {
+        try {
+            const currentMerges = this.state.currentMerges;
+            
+            // Clear all historical data but keep current settings
+            await this.storage.clearAllData();
+            
+            // Reset state but preserve current merge count and settings
+            this.state = {
+                currentMerges: currentMerges,
+                mergeRatePer10Min: this.state.mergeRatePer10Min,
+                targetGoal: this.state.targetGoal,
+                weekStartDate: null,
+                weekEndDate: null,
+                dailyHistory: {},
+                weeklyHistory: [],
+                lastSyncTime: null,
+                lastSyncCode: null
+            };
+            
+            // Update week bounds
+            this.updateWeekBounds();
+            
+            // Reset daily history to current state
+            this.updateCurrentDayTotal();
+            
+            // Save the reset state
+            await this.saveCurrentProgress();
+            
+            return true;
+        } catch (error) {
+            console.error('Error resetting state:', error);
+            return false;
+        }
+    }
+
     async exportData() {
         try {
             return await this.storage.exportData();
