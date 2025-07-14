@@ -18,7 +18,7 @@
 <body>
     <div id="app">
         <header class="app-header">
-            <h1>Scrap Calculator</h1>
+            <h1>Merge Calculator</h1>
             <div class="week-display">
                 <span id="current-week">Week of <span id="week-date-range"></span></span>
                 <div class="countdown" id="countdown-timer"></div>
@@ -40,11 +40,11 @@
                 </div>
 
                 <div class="config-panel">
-                    <div class="config-header" id="config-toggle">
+                    <div class="collapsible-header" id="config-toggle">
                         <h3>Settings</h3>
                         <span class="toggle-arrow">▼</span>
                     </div>
-                    <div class="config-content" id="config-content">
+                    <div class="collapsible-content" id="config-content">
                         <div class="goal-config">
                             <label for="target-goal">Weekly Target</label>
                             <input type="number" id="target-goal" value="50000" min="1">
@@ -136,9 +136,12 @@
             </section>
 
             <section class="sync-section">
-                <h2>Cross-Device Sync</h2>
-                
-                <div class="sync-controls">
+                <div class="collapsible-header" id="sync-toggle">
+                    <h2>Cross-Device Sync</h2>
+                    <span class="toggle-arrow">▼</span>
+                </div>
+                <div class="collapsible-content" id="sync-content">
+                    <div class="sync-controls">
                     <div class="sync-upload">
                         <h3>Upload Data</h3>
                         <p>Generate a 6-character code to sync your data across devices</p>
@@ -163,6 +166,7 @@
                         <span id="sync-status-text">No sync data available</span>
                         <button id="clear-sync-btn" class="clear-btn" style="display: none;">Clear Sync Data</button>
                     </div>
+                </div>
                 </div>
             </section>
         </main>
