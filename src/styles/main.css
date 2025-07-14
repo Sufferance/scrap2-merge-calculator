@@ -308,19 +308,18 @@ body {
     /* Use .collapsible-content instead */
 }
 
-.goal-config, .rate-config {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-/* Collapsible Sync Section - Using consolidated pattern */
 .sync-header {
     /* Use .collapsible-header instead */
 }
 
 .sync-content {
     /* Use .collapsible-content instead */
+}
+
+.goal-config, .rate-config {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .goal-config label, .rate-config label {
@@ -1074,15 +1073,8 @@ input:focus {
     background: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    padding: 1.5rem;
+    padding: 0;
     box-shadow: var(--shadow);
-}
-
-.sync-section h2 {
-    color: var(--text-primary);
-    font-size: 1.3rem;
-    margin-bottom: 1rem;
-    font-weight: 500;
 }
 
 .sync-controls {
