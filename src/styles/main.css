@@ -21,6 +21,37 @@
     --shadow-hover: 0 4px 8px rgba(0,0,0,0.4);
     --border-radius: 8px;
     --transition: all 0.3s ease;
+    
+    /* Status system colors */
+    --status-excellent: #2ECC71;
+    --status-good: #3498DB;
+    --status-on-track: #4CAF50;
+    --status-close: #FF9800;
+    --status-behind: #F44336;
+    --status-critical: #E74C3C;
+    --status-completed: #27AE60;
+    --status-no-data: #808080;
+    
+    /* Status opacity levels */
+    --status-opacity-light: 0.05;
+    --status-opacity-medium: 0.1;
+    --status-opacity-strong: 0.15;
+    --status-opacity-border: 0.3;
+    
+    /* Responsive spacing system */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 0.75rem;
+    --spacing-lg: 1rem;
+    --spacing-xl: 1.5rem;
+    --spacing-2xl: 2rem;
+    
+    /* Component spacing defaults */
+    --panel-padding: var(--spacing-xl);
+    --panel-gap: var(--spacing-xl);
+    --card-padding: var(--spacing-xl);
+    --button-padding: var(--spacing-md);
+    --input-padding: var(--spacing-md);
 }
 
 /* Light theme variables */
@@ -50,6 +81,10 @@ body {
     display: flex;
     flex-direction: column;
 }
+
+/* ==========================================================================
+   LAYOUT COMPONENTS
+   ========================================================================== */
 
 /* App Layout */
 #app {
@@ -91,17 +126,17 @@ body {
 /* Main Content */
 .app-main {
     flex: 1;
-    padding: 1rem;
+    padding: var(--spacing-lg);
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: var(--spacing-2xl);
 }
 
 /* Progress Section */
 .progress-section {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: var(--panel-gap);
 }
 
 .progress-input-panel,
@@ -109,7 +144,7 @@ body {
     background: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    padding: 1.5rem;
+    padding: var(--panel-padding);
     box-shadow: var(--shadow);
     transition: var(--transition);
 }
@@ -130,12 +165,12 @@ body {
 .input-group {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: var(--spacing-lg);
 }
 
 .large-input {
     width: 100%;
-    padding: 1rem;
+    padding: var(--spacing-lg);
     font-size: 1.5rem;
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -156,7 +191,7 @@ body {
 }
 
 .quick-add-btn {
-    padding: 0.75rem;
+    padding: var(--button-padding);
     background: var(--primary-color);
     color: white;
     border: none;
@@ -180,7 +215,7 @@ body {
 #merge-rate,
 #target-goal {
     width: 100%;
-    padding: 0.75rem;
+    padding: var(--input-padding);
     font-size: 1rem;
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -200,31 +235,43 @@ body {
     font-size: 0.875rem;
 }
 
-/* Collapsible Config Panel */
+/* ==========================================================================
+   COLLAPSIBLE COMPONENTS
+   ========================================================================== */
+
+/* Collapsible Panels - Consolidated Pattern */
 .config-panel {
     padding: 0;
 }
 
-.config-header {
+.collapsible-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 1.5rem;
+    padding: var(--spacing-lg) var(--panel-padding);
     cursor: pointer;
     user-select: none;
     border-bottom: 1px solid var(--border-color);
     transition: var(--transition);
 }
 
-.config-header:hover {
+.collapsible-header:hover {
     background: rgba(255, 255, 255, 0.05);
 }
 
-.config-header h3 {
+.collapsible-header h2,
+.collapsible-header h3 {
     margin: 0;
-    font-size: 1.1rem;
     font-weight: 500;
     color: var(--text-primary);
+}
+
+.collapsible-header h2 {
+    font-size: 1.25rem;
+}
+
+.collapsible-header h3 {
+    font-size: 1.1rem;
 }
 
 .toggle-arrow {
@@ -237,19 +284,28 @@ body {
     transform: rotate(-90deg);
 }
 
-.config-content {
-    padding: 1.5rem;
+.collapsible-content {
+    padding: var(--panel-padding);
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: var(--panel-gap);
     max-height: 1000px;
     overflow: hidden;
     transition: max-height 0.3s ease, padding 0.3s ease;
 }
 
-.config-content.collapsed {
+.collapsible-content.collapsed {
     max-height: 0;
-    padding: 0 1.5rem;
+    padding: 0 var(--panel-padding);
+}
+
+/* Legacy class aliases for backwards compatibility */
+.config-header {
+    /* Use .collapsible-header instead */
+}
+
+.config-content {
+    /* Use .collapsible-content instead */
 }
 
 .goal-config, .rate-config {
@@ -258,35 +314,13 @@ body {
     gap: 0.5rem;
 }
 
-/* Collapsible Sync Section */
+/* Collapsible Sync Section - Using consolidated pattern */
 .sync-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    cursor: pointer;
-    user-select: none;
-    border-bottom: 1px solid var(--border-color);
-    transition: var(--transition);
+    /* Use .collapsible-header instead */
 }
-.sync-header:hover {
-    background: rgba(255, 255, 255, 0.05);
-}
-.sync-header h2 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 500;
-    color: var(--text-primary);
-}
+
 .sync-content {
-    padding: 1.5rem;
-    max-height: 1000px;
-    overflow: hidden;
-    transition: max-height 0.3s ease, padding 0.3s ease;
-}
-.sync-content.collapsed {
-    max-height: 0;
-    padding: 0 1.5rem;
+    /* Use .collapsible-content instead */
 }
 
 .goal-config label, .rate-config label {
@@ -296,7 +330,7 @@ body {
 
 .goal-config input, .rate-config input {
     width: 100%;
-    padding: 0.75rem;
+    padding: var(--input-padding);
     font-size: 1rem;
     border: 2px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -315,14 +349,14 @@ body {
 .results-section {
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    gap: var(--panel-gap);
 }
 
 .progress-bar-container {
     background: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    padding: 1.5rem;
+    padding: var(--card-padding);
     box-shadow: var(--shadow);
 }
 
@@ -362,36 +396,40 @@ body {
     background: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
-    padding: 1.5rem;
+    padding: var(--card-padding);
     text-align: center;
     box-shadow: var(--shadow);
     transition: var(--transition);
 }
 
-/* Result Card Status Colors */
+/* ==========================================================================
+   STATUS SYSTEM
+   ========================================================================== */
+
+/* Unified Status System - Result Cards */
 .result-card.excellent {
     border-color: rgba(46, 204, 113, 0.5);
-    background: rgba(46, 204, 113, 0.05);
+    background: rgba(46, 204, 113, var(--status-opacity-light));
 }
 
 .result-card.good {
     border-color: rgba(52, 152, 219, 0.5);
-    background: rgba(52, 152, 219, 0.05);
+    background: rgba(52, 152, 219, var(--status-opacity-light));
 }
 
 .result-card.on-track {
     border-color: rgba(76, 175, 80, 0.5);
-    background: rgba(76, 175, 80, 0.05);
+    background: rgba(76, 175, 80, var(--status-opacity-light));
 }
 
 .result-card.close {
     border-color: rgba(255, 152, 0, 0.5);
-    background: rgba(255, 152, 0, 0.05);
+    background: rgba(255, 152, 0, var(--status-opacity-light));
 }
 
 .result-card.behind {
     border-color: rgba(244, 67, 54, 0.5);
-    background: rgba(244, 67, 54, 0.05);
+    background: rgba(244, 67, 54, var(--status-opacity-light));
 }
 
 .result-card.critical {
@@ -401,7 +439,7 @@ body {
 
 .result-card.completed {
     border-color: rgba(39, 174, 96, 0.5);
-    background: rgba(39, 174, 96, 0.05);
+    background: rgba(39, 174, 96, var(--status-opacity-light));
 }
 
 .result-card:hover {
@@ -437,48 +475,48 @@ body {
     font-weight: 400;
 }
 
-/* Enhanced Status Styles */
+/* Unified Status System - Status Components */
 .status.excellent {
-    background: rgba(46, 204, 113, 0.15);
-    color: #2ECC71;
-    border: 1px solid rgba(46, 204, 113, 0.3);
+    background: rgba(46, 204, 113, var(--status-opacity-strong));
+    color: var(--status-excellent);
+    border: 1px solid rgba(46, 204, 113, var(--status-opacity-border));
 }
 
 .status.good {
-    background: rgba(52, 152, 219, 0.15);
-    color: #3498DB;
-    border: 1px solid rgba(52, 152, 219, 0.3);
+    background: rgba(52, 152, 219, var(--status-opacity-strong));
+    color: var(--status-good);
+    border: 1px solid rgba(52, 152, 219, var(--status-opacity-border));
 }
 
 .status.on-track {
-    background: rgba(76, 175, 80, 0.1);
-    color: var(--secondary-color);
-    border: 1px solid rgba(76, 175, 80, 0.3);
+    background: rgba(76, 175, 80, var(--status-opacity-medium));
+    color: var(--status-on-track);
+    border: 1px solid rgba(76, 175, 80, var(--status-opacity-border));
 }
 
 .status.close {
-    background: rgba(255, 152, 0, 0.1);
-    color: var(--warning-color);
-    border: 1px solid rgba(255, 152, 0, 0.3);
+    background: rgba(255, 152, 0, var(--status-opacity-medium));
+    color: var(--status-close);
+    border: 1px solid rgba(255, 152, 0, var(--status-opacity-border));
 }
 
 .status.behind {
-    background: rgba(244, 67, 54, 0.1);
-    color: var(--error-color);
-    border: 1px solid rgba(244, 67, 54, 0.3);
+    background: rgba(244, 67, 54, var(--status-opacity-medium));
+    color: var(--status-behind);
+    border: 1px solid rgba(244, 67, 54, var(--status-opacity-border));
 }
 
 .status.critical {
     background: rgba(231, 76, 60, 0.2);
-    color: #E74C3C;
+    color: var(--status-critical);
     border: 1px solid rgba(231, 76, 60, 0.4);
     animation: pulse 2s infinite;
 }
 
 .status.completed {
-    background: rgba(39, 174, 96, 0.15);
-    color: #27AE60;
-    border: 1px solid rgba(39, 174, 96, 0.3);
+    background: rgba(39, 174, 96, var(--status-opacity-strong));
+    color: var(--status-completed);
+    border: 1px solid rgba(39, 174, 96, var(--status-opacity-border));
 }
 
 /* Status Animation */
@@ -494,7 +532,7 @@ body {
     transform: scale(1);
 }
 
-/* Predictive Finish Time Styles */
+/* Unified Status System - Predicted Finish */
 .predicted-finish {
     margin-top: 0.5rem;
     padding: 0.5rem;
@@ -505,38 +543,38 @@ body {
 }
 
 .predicted-finish.excellent {
-    background: rgba(46, 204, 113, 0.1);
-    color: #2ECC71;
+    background: rgba(46, 204, 113, var(--status-opacity-medium));
+    color: var(--status-excellent);
 }
 
 .predicted-finish.good {
-    background: rgba(52, 152, 219, 0.1);
-    color: #3498DB;
+    background: rgba(52, 152, 219, var(--status-opacity-medium));
+    color: var(--status-good);
 }
 
 .predicted-finish.on-track {
-    background: rgba(76, 175, 80, 0.1);
-    color: var(--secondary-color);
+    background: rgba(76, 175, 80, var(--status-opacity-medium));
+    color: var(--status-on-track);
 }
 
 .predicted-finish.behind {
-    background: rgba(244, 67, 54, 0.1);
-    color: var(--error-color);
+    background: rgba(244, 67, 54, var(--status-opacity-medium));
+    color: var(--status-behind);
 }
 
 .predicted-finish.critical {
-    background: rgba(231, 76, 60, 0.15);
-    color: #E74C3C;
+    background: rgba(231, 76, 60, var(--status-opacity-strong));
+    color: var(--status-critical);
 }
 
 .predicted-finish.completed {
-    background: rgba(39, 174, 96, 0.1);
-    color: #27AE60;
+    background: rgba(39, 174, 96, var(--status-opacity-medium));
+    color: var(--status-completed);
 }
 
 .predicted-finish.no-data {
-    background: rgba(128, 128, 128, 0.1);
-    color: var(--text-secondary);
+    background: rgba(128, 128, 128, var(--status-opacity-medium));
+    color: var(--status-no-data);
 }
 
 /* Time Requirements Combined Component */
@@ -578,8 +616,20 @@ body {
     font-size: 0.875rem;
 }
 
-/* Responsive Design */
+/* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
+
+/* Responsive Design - Tablet */
 @media (max-width: 768px) {
+    :root {
+        --panel-padding: var(--spacing-lg);
+        --panel-gap: var(--spacing-xl);
+        --card-padding: var(--spacing-lg);
+        --button-padding: var(--spacing-sm);
+        --input-padding: var(--spacing-md);
+    }
+    
     .app-header h1 {
         font-size: 1.5rem;
     }
@@ -589,36 +639,24 @@ body {
     }
     
     .app-main {
-        padding: 0.75rem;
-        gap: 1.5rem;
+        padding: var(--panel-padding);
+        gap: var(--panel-gap);
     }
     
     .progress-input-panel {
-        padding: 1rem;
+        padding: var(--card-padding);
     }
     
-    .config-header {
-        padding: 0.75rem 1rem;
+    .collapsible-header {
+        padding: var(--panel-padding);
     }
     
-    .config-content {
-        padding: 1rem;
+    .collapsible-content {
+        padding: var(--card-padding);
     }
     
-    .config-content.collapsed {
-        padding: 0 1rem;
-    }
-    
-    .sync-header {
-        padding: 0.75rem 1rem;
-    }
-    
-    .sync-content {
-        padding: 1rem;
-    }
-    
-    .sync-content.collapsed {
-        padding: 0 1rem;
+    .collapsible-content.collapsed {
+        padding: 0 var(--card-padding);
     }
     
     .large-input {
@@ -666,13 +704,21 @@ body {
 }
 
 @media (max-width: 480px) {
+    :root {
+        --panel-padding: var(--spacing-md);
+        --panel-gap: var(--spacing-lg);
+        --card-padding: var(--spacing-md);
+        --button-padding: var(--spacing-sm);
+        --input-padding: var(--spacing-md);
+    }
+    
     #app {
         margin: 0;
         min-height: 100vh;
     }
     
     .app-header {
-        padding: 0.75rem;
+        padding: var(--panel-padding);
     }
     
     .app-header h1 {
@@ -680,36 +726,24 @@ body {
     }
     
     .app-main {
-        padding: 0.5rem;
-        gap: 1rem;
+        padding: var(--spacing-sm);
+        gap: var(--panel-gap);
     }
     
     .progress-input-panel {
-        padding: 0.75rem;
+        padding: var(--card-padding);
     }
     
-    .config-header {
-        padding: 0.5rem 0.75rem;
+    .collapsible-header {
+        padding: var(--spacing-sm) var(--card-padding);
     }
     
-    .config-content {
-        padding: 0.75rem;
+    .collapsible-content {
+        padding: var(--card-padding);
     }
     
-    .config-content.collapsed {
-        padding: 0 0.75rem;
-    }
-    
-    .sync-header {
-        padding: 0.5rem 0.75rem;
-    }
-    
-    .sync-content {
-        padding: 0.75rem;
-    }
-    
-    .sync-content.collapsed {
-        padding: 0 0.75rem;
+    .collapsible-content.collapsed {
+        padding: 0 var(--card-padding);
     }
     
     .large-input {
@@ -803,6 +837,10 @@ input:focus {
     outline: none;
 }
 
+/* ==========================================================================
+   ANIMATIONS & UTILITIES
+   ========================================================================== */
+
 /* Animation classes */
 .fade-in {
     animation: fadeIn 0.3s ease-in;
@@ -834,6 +872,10 @@ input:focus {
         transform: scale(1);
     }
 }
+
+/* ==========================================================================
+   FEATURE SECTIONS
+   ========================================================================== */
 
 /* History Section */
 .history-section {
