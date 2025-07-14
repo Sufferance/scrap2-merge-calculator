@@ -184,32 +184,18 @@ body {
     box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
 }
 
-.quick-add-buttons {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
+.merge-increment-display {
+    color: var(--secondary-color);
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    text-align: center;
 }
 
-.quick-add-btn {
-    padding: var(--button-padding);
-    background: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: var(--border-radius);
-    font-size: 1rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: var(--transition);
-    min-height: 48px;
-}
-
-.quick-add-btn:hover {
-    background: var(--primary-dark);
-    transform: translateY(-1px);
-}
-
-.quick-add-btn:active {
-    transform: translateY(0);
+.merge-increment-display.show {
+    opacity: 1;
 }
 
 #merge-rate,
@@ -663,16 +649,6 @@ body {
         padding: 0.75rem;
     }
     
-    .quick-add-buttons {
-        grid-template-columns: repeat(3, 1fr);
-        gap: 0.5rem;
-    }
-    
-    .quick-add-btn {
-        padding: 0.5rem;
-        font-size: 0.9rem;
-    }
-    
     /* Mobile responsive for time requirements */
     .time-requirement {
         flex-direction: column;
@@ -750,16 +726,6 @@ body {
         padding: 0.75rem;
     }
     
-    .quick-add-buttons {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    
-    .quick-add-btn {
-        padding: 0.5rem;
-        font-size: 0.8rem;
-        min-height: 42px;
-    }
-    
     .results-grid {
         grid-template-columns: 1fr;
     }
@@ -810,11 +776,6 @@ body {
 
 /* Touch-friendly improvements */
 @media (hover: none) and (pointer: coarse) {
-    .quick-add-btn {
-        min-height: 48px;
-        padding: 0.75rem;
-    }
-    
     .large-input {
         min-height: 48px;
     }

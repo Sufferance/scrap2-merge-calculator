@@ -51,12 +51,6 @@ class AppController {
             this.handleTargetInput(e);
         });
 
-        // Quick add buttons
-        this.services.display.elements.quickAddBtns?.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                this.handleQuickAdd(e);
-            });
-        });
 
         // Touch gestures for mobile
         this.setupTouchGestures();
@@ -73,7 +67,13 @@ class AppController {
 
     handleMergeInput(e) {
         const newValue = parseInt(e.target.value) || 0;
-        this.services.data.setCurrentMerges(newValue);
+        const increment = this.services.data.setCurrentMerges(newValue);
+        
+        // Show increment if there was one
+        if (increment > 0) {
+            this.showMergeIncrement(increment);
+        }
+        
         this.updateCalculationsAndSave();
     }
 
@@ -89,18 +89,19 @@ class AppController {
         this.updateCalculationsAndSave();
     }
 
-    handleQuickAdd(e) {
-        const amount = parseInt(e.target.dataset.amount) || 0;
-        this.services.data.addMerges(amount);
+    showMergeIncrement(increment) {
+        const incrementDisplay = document.getElementById('merge-increment-display');
+        if (!incrementDisplay) return;
         
-        // Update input display
-        this.services.display.elements.currentMerges.value = this.services.data.getCurrentMerges();
+        incrementDisplay.textContent = `+${increment.toLocaleString()} merges`;
+        incrementDisplay.classList.add('show');
         
-        // Add visual feedback
-        this.services.display.addPulseEffect(this.services.display.elements.currentMerges);
-        
-        this.updateCalculationsAndSave();
+        // Hide after 3 seconds
+        setTimeout(() => {
+            incrementDisplay.classList.remove('show');
+        }, 3000);
     }
+
 
     setupTouchGestures() {
         const mergeInput = this.services.display.elements.currentMerges;

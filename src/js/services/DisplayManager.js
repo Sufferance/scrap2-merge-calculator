@@ -47,8 +47,7 @@ class DisplayManager {
             syncStatusText: document.getElementById('sync-status-text'),
             
             // Container elements
-            resultCards: document.querySelectorAll('.result-card'),
-            quickAddBtns: document.querySelectorAll('.quick-add-btn')
+            resultCards: document.querySelectorAll('.result-card')
         };
     }
 

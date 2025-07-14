@@ -245,8 +245,15 @@ class DataManager {
 
     // State setters
     setCurrentMerges(value) {
-        this.state.currentMerges = Math.max(0, parseInt(value) || 0);
-        this.updateCurrentDayTotal();
+        const newValue = Math.max(0, parseInt(value) || 0);
+        const increment = newValue - this.state.currentMerges;
+        
+        if (newValue > this.state.currentMerges) {
+            this.state.currentMerges = newValue;
+            this.updateCurrentDayTotal();
+            return increment;
+        }
+        return 0;
     }
 
     setMergeRatePer10Min(value) {
