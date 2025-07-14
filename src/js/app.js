@@ -69,6 +69,9 @@ class ScrapCalculator {
         // Touch gestures for mobile
         this.setupTouchGestures();
         
+        // Collapsible config panel
+        this.setupCollapsibleConfig();
+        
         // Sync functionality
         this.setupSyncListeners();
     }
@@ -228,15 +231,20 @@ class ScrapCalculator {
         // Update result cards
         document.getElementById('merges-needed').textContent = mergesNeeded.toLocaleString();
         
-        // Format hours
-        const hoursText = hoursRequired < 1 ? 
-            `${(hoursRequired * 60).toFixed(0)}min` : 
-            `${hoursRequired.toFixed(1)}h`;
+        // Format hours as hours:minutes
+        const totalHours = Math.floor(hoursRequired);
+        const totalMinutes = Math.round((hoursRequired - totalHours) * 60);
+        const hoursText = totalHours > 0 ? 
+            `${totalHours}h ${totalMinutes}m` : 
+            `${totalMinutes}m`;
         document.getElementById('hours-required').textContent = hoursText;
         
-        const dailyHoursText = averageHoursPerDay < 1 ? 
-            `${(averageHoursPerDay * 60).toFixed(0)}min` : 
-            `${averageHoursPerDay.toFixed(1)}h`;
+        // Format daily hours as hours:minutes
+        const dailyHours = Math.floor(averageHoursPerDay);
+        const dailyMinutes = Math.round((averageHoursPerDay - dailyHours) * 60);
+        const dailyHoursText = dailyHours > 0 ? 
+            `${dailyHours}h ${dailyMinutes}m` : 
+            `${dailyMinutes}m`;
         document.getElementById('hours-per-day').textContent = dailyHoursText;
 
         // Update enhanced status
@@ -1077,6 +1085,34 @@ class ScrapCalculator {
                 </div>
             ` : ''}
         `;
+    }
+
+    setupCollapsibleConfig() {
+        const configToggle = document.getElementById('config-toggle');
+        const configContent = document.getElementById('config-content');
+        const toggleArrow = configToggle.querySelector('.toggle-arrow');
+        
+        // Load saved state (default to expanded)
+        const isCollapsed = localStorage.getItem('configCollapsed') === 'true';
+        
+        if (isCollapsed) {
+            configContent.classList.add('collapsed');
+            toggleArrow.classList.add('rotated');
+        }
+        
+        configToggle.addEventListener('click', () => {
+            const isCurrentlyCollapsed = configContent.classList.contains('collapsed');
+            
+            if (isCurrentlyCollapsed) {
+                configContent.classList.remove('collapsed');
+                toggleArrow.classList.remove('rotated');
+                localStorage.setItem('configCollapsed', 'false');
+            } else {
+                configContent.classList.add('collapsed');
+                toggleArrow.classList.add('rotated');
+                localStorage.setItem('configCollapsed', 'true');
+            }
+        });
     }
 
     // Sync functionality

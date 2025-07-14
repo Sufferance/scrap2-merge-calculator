@@ -105,8 +105,7 @@ body {
 }
 
 .progress-input-panel,
-.rate-config-panel,
-.goal-config-panel {
+.config-panel {
     background: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -116,14 +115,12 @@ body {
 }
 
 .progress-input-panel:hover,
-.rate-config-panel:hover,
-.goal-config-panel:hover {
+.config-panel:hover {
     box-shadow: var(--shadow-hover);
 }
 
 .progress-input-panel label,
-.rate-config-panel label,
-.goal-config-panel label {
+.config-panel label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
@@ -201,6 +198,86 @@ body {
     margin-top: 0.25rem;
     color: var(--text-secondary);
     font-size: 0.875rem;
+}
+
+/* Collapsible Config Panel */
+.config-panel {
+    padding: 0;
+}
+
+.config-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.config-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.config-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.toggle-arrow {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    transition: transform 0.3s ease;
+}
+
+.toggle-arrow.rotated {
+    transform: rotate(-90deg);
+}
+
+.config-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-height: 1000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.config-content.collapsed {
+    max-height: 0;
+    padding: 0 1.5rem;
+}
+
+.goal-config, .rate-config {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.goal-config label, .rate-config label {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.goal-config input, .rate-config input {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    background: var(--surface-color);
+    color: var(--text-primary);
+}
+
+.goal-config input:focus, .rate-config input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
 }
 
 /* Results Section */
@@ -431,6 +508,35 @@ body {
     color: var(--text-secondary);
 }
 
+/* Time Requirements Combined Component */
+.time-requirements {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.time-requirement {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.time-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.time-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
 /* Footer */
 .app-footer {
     background: var(--background-color);
@@ -456,10 +562,20 @@ body {
         gap: 1.5rem;
     }
     
-    .progress-input-panel,
-    .rate-config-panel,
-    .goal-config-panel {
+    .progress-input-panel {
         padding: 1rem;
+    }
+    
+    .config-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .config-content {
+        padding: 1rem;
+    }
+    
+    .config-content.collapsed {
+        padding: 0 1rem;
     }
     
     .large-input {
@@ -475,6 +591,21 @@ body {
     .quick-add-btn {
         padding: 0.5rem;
         font-size: 0.9rem;
+    }
+    
+    /* Mobile responsive for time requirements */
+    .time-requirement {
+        flex-direction: column;
+        gap: 0.25rem;
+        text-align: center;
+    }
+    
+    .time-label {
+        font-size: 0.75rem;
+    }
+    
+    .time-value {
+        font-size: 1.1rem;
     }
     
     .results-grid {
@@ -510,10 +641,20 @@ body {
         gap: 1rem;
     }
     
-    .progress-input-panel,
-    .rate-config-panel,
-    .goal-config-panel {
+    .progress-input-panel {
         padding: 0.75rem;
+    }
+    
+    .config-header {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .config-content {
+        padding: 0.75rem;
+    }
+    
+    .config-content.collapsed {
+        padding: 0 0.75rem;
     }
     
     .large-input {

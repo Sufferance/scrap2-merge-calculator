@@ -39,15 +39,22 @@
                     </div>
                 </div>
 
-                <div class="rate-config-panel">
-                    <label for="merge-rate">Merge Rate (per 10 minutes)</label>
-                    <input type="number" id="merge-rate" placeholder="Enter merge rate" min="1" step="0.1">
-                    <small class="helper-text">Example: If you merge 200 items every 10 minutes, enter 200</small>
-                </div>
-
-                <div class="goal-config-panel">
-                    <label for="target-goal">Weekly Target</label>
-                    <input type="number" id="target-goal" value="50000" min="1">
+                <div class="config-panel">
+                    <div class="config-header" id="config-toggle">
+                        <h3>Settings</h3>
+                        <span class="toggle-arrow">▼</span>
+                    </div>
+                    <div class="config-content" id="config-content">
+                        <div class="goal-config">
+                            <label for="target-goal">Weekly Target</label>
+                            <input type="number" id="target-goal" value="50000" min="1">
+                        </div>
+                        <div class="rate-config">
+                            <label for="merge-rate">Merge Rate (per 10 minutes)</label>
+                            <input type="number" id="merge-rate" placeholder="Enter merge rate" min="1" step="0.1">
+                            <small class="helper-text">Example: If you merge 200 items every 10 minutes, enter 200</small>
+                        </div>
+                    </div>
                 </div>
             </section>
 
@@ -65,14 +72,18 @@
                         <div class="result-value" id="merges-needed">0</div>
                     </div>
                     
-                    <div class="result-card" id="hours-required-card">
-                        <h3>Hours Required</h3>
-                        <div class="result-value" id="hours-required">0</div>
-                    </div>
-                    
-                    <div class="result-card" id="hours-per-day-card">
-                        <h3>Time per Day</h3>
-                        <div class="result-value" id="hours-per-day">0</div>
+                    <div class="result-card" id="time-requirements-card">
+                        <h3>Time Requirements</h3>
+                        <div class="time-requirements">
+                            <div class="time-requirement">
+                                <span class="time-label">Total Hours:</span>
+                                <span class="time-value" id="hours-required">0</span>
+                            </div>
+                            <div class="time-requirement">
+                                <span class="time-label">Per Day:</span>
+                                <span class="time-value" id="hours-per-day">0</span>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="result-card" id="on-track-card">
