@@ -1,4 +1,4 @@
-// Scrap Calculator Main Application
+// Scrap Calculator Main Application,
 class ScrapCalculator {
     constructor() {
         this.currentMerges = 0;
