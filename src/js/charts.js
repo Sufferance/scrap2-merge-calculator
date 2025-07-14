@@ -30,9 +30,9 @@ class ProgressCharts {
         if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
-        const history = this.app.weeklyHistory;
+        const history = this.app.services ? this.app.services.data.getWeeklyHistory() : (this.app.weeklyHistory || []);
         
-        if (history.length === 0) {
+        if (!history || history.length === 0) {
             this.showNoDataMessage(canvas, 'No weekly data available yet');
             return;
         }
@@ -106,9 +106,9 @@ class ProgressCharts {
         const ctx = canvas.getContext('2d');
         
         // Get current week daily progress
-        const dailyProgress = this.app.calculateDailyProgress();
+        const dailyProgress = this.app.services ? this.app.services.data.getDailyProgress() : (this.app.calculateDailyProgress ? this.app.calculateDailyProgress() : []);
         
-        if (dailyProgress.length === 0) {
+        if (!dailyProgress || dailyProgress.length === 0) {
             this.showNoDataMessage(canvas, 'No daily data available yet');
             return;
         }
@@ -176,9 +176,9 @@ class ProgressCharts {
         if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
-        const history = this.app.weeklyHistory;
+        const history = this.app.services ? this.app.services.data.getWeeklyHistory() : (this.app.weeklyHistory || []);
         
-        if (history.length === 0) {
+        if (!history || history.length === 0) {
             this.showNoDataMessage(canvas, 'No achievement data available yet');
             return;
         }
@@ -254,9 +254,9 @@ class ProgressCharts {
             return;
         }
 
-        const dailyProgress = this.app.calculateDailyProgress();
+        const dailyProgress = this.app.services ? this.app.services.data.getDailyProgress() : (this.app.calculateDailyProgress ? this.app.calculateDailyProgress() : []);
         
-        if (dailyProgress.length === 0) {
+        if (!dailyProgress || dailyProgress.length === 0) {
             this.charts.dailyProgress.destroy();
             this.charts.dailyProgress = null;
             return;
@@ -278,9 +278,9 @@ class ProgressCharts {
             return;
         }
 
-        const history = this.app.weeklyHistory;
+        const history = this.app.services ? this.app.services.data.getWeeklyHistory() : (this.app.weeklyHistory || []);
         
-        if (history.length === 0) {
+        if (!history || history.length === 0) {
             this.charts.weeklyTrend.destroy();
             this.charts.weeklyTrend = null;
             return;
@@ -304,9 +304,9 @@ class ProgressCharts {
             return;
         }
 
-        const history = this.app.weeklyHistory;
+        const history = this.app.services ? this.app.services.data.getWeeklyHistory() : (this.app.weeklyHistory || []);
         
-        if (history.length === 0) {
+        if (!history || history.length === 0) {
             this.charts.achievement.destroy();
             this.charts.achievement = null;
             return;
@@ -325,9 +325,9 @@ class ProgressCharts {
             return;
         }
 
-        const history = this.app.weeklyHistory;
+        const history = this.app.services ? this.app.services.data.getWeeklyHistory() : (this.app.weeklyHistory || []);
         
-        if (history.length === 0) {
+        if (!history || history.length === 0) {
             this.charts.comparison.destroy();
             this.charts.comparison = null;
             return;
@@ -359,9 +359,9 @@ class ProgressCharts {
         if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
-        const history = this.app.weeklyHistory;
+        const history = this.app.services ? this.app.services.data.getWeeklyHistory() : (this.app.weeklyHistory || []);
         
-        if (history.length === 0) {
+        if (!history || history.length === 0) {
             this.showNoDataMessage(canvas, 'No comparison data available yet');
             return;
         }

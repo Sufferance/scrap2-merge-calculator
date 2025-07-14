@@ -105,8 +105,7 @@ body {
 }
 
 .progress-input-panel,
-.rate-config-panel,
-.goal-config-panel {
+.config-panel {
     background: var(--surface-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -116,14 +115,12 @@ body {
 }
 
 .progress-input-panel:hover,
-.rate-config-panel:hover,
-.goal-config-panel:hover {
+.config-panel:hover {
     box-shadow: var(--shadow-hover);
 }
 
 .progress-input-panel label,
-.rate-config-panel label,
-.goal-config-panel label {
+.config-panel label {
     display: block;
     margin-bottom: 0.5rem;
     font-weight: 500;
@@ -203,6 +200,86 @@ body {
     font-size: 0.875rem;
 }
 
+/* Collapsible Config Panel */
+.config-panel {
+    padding: 0;
+}
+
+.config-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    cursor: pointer;
+    user-select: none;
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.config-header:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.config-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.toggle-arrow {
+    font-size: 1.2rem;
+    color: var(--text-secondary);
+    transition: transform 0.3s ease;
+}
+
+.toggle-arrow.rotated {
+    transform: rotate(-90deg);
+}
+
+.config-content {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    max-height: 1000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+}
+
+.config-content.collapsed {
+    max-height: 0;
+    padding: 0 1.5rem;
+}
+
+.goal-config, .rate-config {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.goal-config label, .rate-config label {
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.goal-config input, .rate-config input {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1rem;
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    background: var(--surface-color);
+    color: var(--text-primary);
+}
+
+.goal-config input:focus, .rate-config input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
 /* Results Section */
 .results-section {
     display: flex;
@@ -260,6 +337,42 @@ body {
     transition: var(--transition);
 }
 
+/* Result Card Status Colors */
+.result-card.excellent {
+    border-color: rgba(46, 204, 113, 0.5);
+    background: rgba(46, 204, 113, 0.05);
+}
+
+.result-card.good {
+    border-color: rgba(52, 152, 219, 0.5);
+    background: rgba(52, 152, 219, 0.05);
+}
+
+.result-card.on-track {
+    border-color: rgba(76, 175, 80, 0.5);
+    background: rgba(76, 175, 80, 0.05);
+}
+
+.result-card.close {
+    border-color: rgba(255, 152, 0, 0.5);
+    background: rgba(255, 152, 0, 0.05);
+}
+
+.result-card.behind {
+    border-color: rgba(244, 67, 54, 0.5);
+    background: rgba(244, 67, 54, 0.05);
+}
+
+.result-card.critical {
+    border-color: rgba(231, 76, 60, 0.6);
+    background: rgba(231, 76, 60, 0.08);
+}
+
+.result-card.completed {
+    border-color: rgba(39, 174, 96, 0.5);
+    background: rgba(39, 174, 96, 0.05);
+}
+
 .result-card:hover {
     box-shadow: var(--shadow-hover);
 }
@@ -293,19 +406,135 @@ body {
     font-weight: 400;
 }
 
+/* Enhanced Status Styles */
+.status.excellent {
+    background: rgba(46, 204, 113, 0.15);
+    color: #2ECC71;
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.status.good {
+    background: rgba(52, 152, 219, 0.15);
+    color: #3498DB;
+    border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
 .status.on-track {
     background: rgba(76, 175, 80, 0.1);
     color: var(--secondary-color);
+    border: 1px solid rgba(76, 175, 80, 0.3);
 }
 
 .status.close {
     background: rgba(255, 152, 0, 0.1);
     color: var(--warning-color);
+    border: 1px solid rgba(255, 152, 0, 0.3);
 }
 
 .status.behind {
     background: rgba(244, 67, 54, 0.1);
     color: var(--error-color);
+    border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.status.critical {
+    background: rgba(231, 76, 60, 0.2);
+    color: #E74C3C;
+    border: 1px solid rgba(231, 76, 60, 0.4);
+    animation: pulse 2s infinite;
+}
+
+.status.completed {
+    background: rgba(39, 174, 96, 0.15);
+    color: #27AE60;
+    border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+/* Status Animation */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+}
+
+/* Status Transition Animation */
+.status {
+    transition: all 0.3s ease;
+    transform: scale(1);
+}
+
+/* Predictive Finish Time Styles */
+.predicted-finish {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    border-radius: var(--border-radius);
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.predicted-finish.excellent {
+    background: rgba(46, 204, 113, 0.1);
+    color: #2ECC71;
+}
+
+.predicted-finish.good {
+    background: rgba(52, 152, 219, 0.1);
+    color: #3498DB;
+}
+
+.predicted-finish.on-track {
+    background: rgba(76, 175, 80, 0.1);
+    color: var(--secondary-color);
+}
+
+.predicted-finish.behind {
+    background: rgba(244, 67, 54, 0.1);
+    color: var(--error-color);
+}
+
+.predicted-finish.critical {
+    background: rgba(231, 76, 60, 0.15);
+    color: #E74C3C;
+}
+
+.predicted-finish.completed {
+    background: rgba(39, 174, 96, 0.1);
+    color: #27AE60;
+}
+
+.predicted-finish.no-data {
+    background: rgba(128, 128, 128, 0.1);
+    color: var(--text-secondary);
+}
+
+/* Time Requirements Combined Component */
+.time-requirements {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.time-requirement {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.time-label {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.time-value {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 /* Footer */
@@ -333,10 +562,20 @@ body {
         gap: 1.5rem;
     }
     
-    .progress-input-panel,
-    .rate-config-panel,
-    .goal-config-panel {
+    .progress-input-panel {
         padding: 1rem;
+    }
+    
+    .config-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .config-content {
+        padding: 1rem;
+    }
+    
+    .config-content.collapsed {
+        padding: 0 1rem;
     }
     
     .large-input {
@@ -352,6 +591,21 @@ body {
     .quick-add-btn {
         padding: 0.5rem;
         font-size: 0.9rem;
+    }
+    
+    /* Mobile responsive for time requirements */
+    .time-requirement {
+        flex-direction: column;
+        gap: 0.25rem;
+        text-align: center;
+    }
+    
+    .time-label {
+        font-size: 0.75rem;
+    }
+    
+    .time-value {
+        font-size: 1.1rem;
     }
     
     .results-grid {
@@ -387,10 +641,20 @@ body {
         gap: 1rem;
     }
     
-    .progress-input-panel,
-    .rate-config-panel,
-    .goal-config-panel {
+    .progress-input-panel {
         padding: 0.75rem;
+    }
+    
+    .config-header {
+        padding: 0.5rem 0.75rem;
+    }
+    
+    .config-content {
+        padding: 0.75rem;
+    }
+    
+    .config-content.collapsed {
+        padding: 0 0.75rem;
     }
     
     .large-input {
