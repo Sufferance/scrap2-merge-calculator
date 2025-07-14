@@ -1,6 +1,6 @@
 # Scrap Calculator
 
-A Progressive Web App for calculating and tracking weekly merge goals in the game Scraps 2. Helps players determine how many hours they need to play to reach their weekly merge targets (typically 50,000 merges by Sunday 5pm).
+A Web App for calculating and tracking weekly merge goals in the game Scrap 2. Helps players determine how many hours they need to play to reach their weekly merge targets (typically 50,000 merges by Sunday 5pm).
 
 ## What It Does
 
