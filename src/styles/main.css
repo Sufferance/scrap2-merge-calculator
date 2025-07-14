@@ -66,26 +66,26 @@ body {
 .app-header {
     background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
     color: white;
-    padding: 1rem;
+    padding: 0.6rem 1rem;
     text-align: center;
     box-shadow: var(--shadow);
 }
 
 .app-header h1 {
-    font-size: 1.8rem;
-    margin-bottom: 0.5rem;
+    font-size: 1.4rem;
+    margin-bottom: 0.25rem;
     font-weight: 300;
 }
 
 .week-display {
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     opacity: 0.9;
 }
 
 .countdown {
     font-weight: bold;
-    font-size: 1.1rem;
-    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    margin-top: 0.25rem;
 }
 
 /* Main Content */
