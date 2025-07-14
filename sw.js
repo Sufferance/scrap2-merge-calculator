@@ -74,8 +74,6 @@ self.addEventListener('sync', (event) => {
 self.addEventListener('push', (event) => {
     const options = {
         body: event.data ? event.data.text() : 'Weekly goal reminder',
-        icon: '/assets/icons/icon-192x192.png',
-        badge: '/assets/icons/icon-32x32.png',
         vibrate: [100, 50, 100],
         data: {
             dateOfArrival: Date.now(),

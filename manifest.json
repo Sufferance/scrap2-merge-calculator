@@ -10,30 +10,5 @@
   "scope": "/",
   "lang": "en-US",
   "categories": ["games", "productivity", "utilities"],
-  "icons": [
-    {
-      "src": "assets/icons/icon-32x32.png",
-      "sizes": "32x32",
-      "type": "image/png"
-    },
-    {
-      "src": "assets/icons/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
-    },
-    {
-      "src": "assets/icons/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
-    }
-  ],
-  "screenshots": [
-    {
-      "src": "assets/screenshots/mobile-portrait.png",
-      "sizes": "375x667",
-      "type": "image/png"
-    }
-  ]
+  "icons": []
 }
