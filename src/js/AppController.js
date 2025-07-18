@@ -71,13 +71,7 @@ class AppController {
 
     handleMergeInput(e) {
         const newValue = parseInt(e.target.value) || 0;
-        let increment = 0;
-        
-        try {
-            increment = this.services.data.setCurrentMerges(newValue);
-        } catch (error) {
-            console.error('Error in setCurrentMerges:', error);
-        }
+        const increment = this.services.data.setCurrentMerges(newValue);
         
         // Show increment if there was one
         if (increment > 0) {
