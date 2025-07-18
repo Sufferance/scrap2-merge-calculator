@@ -235,28 +235,28 @@ class CalculationService {
         const weekId = this.getWeekId(weekStartDate);
         const timeSinceStart = now - weekStartDate;
         const daysSinceStart = Math.floor(timeSinceStart / this.MS_PER_DAY);
-        
+
         const dailyProgress = [];
         let previousCumulative = 0;
-        
-        for (let i = 0; i <= daysSinceStart; i++) {
+
+        for (let i = 0; i <= daysSinceStart && i < 7; i++) { // Limit to 7 days
             const dayDate = new Date(weekStartDate);
             dayDate.setDate(weekStartDate.getDate() + i);
             const dateKey = dayDate.toDateString();
-            
+
             // Get cumulative total for this day
             const cumulativeForDay = dailyHistory?.[weekId]?.[dateKey] || previousCumulative;
-            
-            // Calculate the daily increment
-            const dailyIncrement = cumulativeForDay - previousCumulative;
-            
+
+            // Calculate the daily increment (ensure non-negative)
+            const dailyIncrement = Math.max(0, cumulativeForDay - previousCumulative);
+
             dailyProgress.push({
                 date: dayDate.toISOString(),
                 merges: dailyIncrement,
                 dayOfWeek: dayDate.getDay(),
                 dateKey: dateKey
             });
-            
+
             previousCumulative = cumulativeForDay;
         }
         

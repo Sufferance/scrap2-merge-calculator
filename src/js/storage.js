@@ -66,6 +66,7 @@ class StorageManager {
                 targetGoal: progressData.targetGoal,
                 weekStartDate: progressData.weekStartDate,
                 weekEndDate: progressData.weekEndDate,
+                dailyHistory: progressData.dailyHistory,
                 lastUpdated: new Date().toISOString()
             };
 
@@ -211,6 +212,7 @@ class FallbackStorage {
             targetGoal: progressData.targetGoal,
             weekStartDate: progressData.weekStartDate,
             weekEndDate: progressData.weekEndDate,
+            dailyHistory: progressData.dailyHistory,
             lastUpdated: new Date().toISOString()
         };
         
