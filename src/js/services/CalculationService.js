@@ -236,10 +236,6 @@ class CalculationService {
         const timeSinceStart = now - weekStartDate;
         const daysSinceStart = Math.floor(timeSinceStart / this.MS_PER_DAY);
         
-        const weekData = dailyHistory?.[weekId];
-        const baseline = weekData?.['_baseline'] || 0;
-        const baselineDate = weekData?.['_baselineDate'] ? new Date(weekData['_baselineDate']) : null;
-        
         const dailyProgress = [];
         for (let i = 0; i <= daysSinceStart; i++) {
             const dayDate = new Date(weekStartDate);
@@ -247,21 +243,13 @@ class CalculationService {
             const dateKey = dayDate.toDateString();
             
             // Get actual daily progress from stored data
-            let mergesForDay = weekData?.[dateKey] || 0;
-            
-            // If we have a baseline and this day is before the baseline was set,
-            // don't show any data (to avoid misleading zero values)
-            if (baseline > 0 && baselineDate && dayDate < baselineDate) {
-                // Skip days before baseline was established
-                continue;
-            }
+            const mergesForDay = dailyHistory?.[weekId]?.[dateKey] || 0;
             
             dailyProgress.push({
                 date: dayDate.toISOString(),
                 merges: mergesForDay,
                 dayOfWeek: dayDate.getDay(),
-                dateKey: dateKey,
-                isBaseline: baseline > 0 && !mergesForDay // Flag for UI to show differently
+                dateKey: dateKey
             });
         }
         
@@ -286,37 +274,23 @@ class CalculationService {
         dayDate.setDate(weekStartDate.getDate() + daysSinceStart);
         const today = dayDate.toDateString();
         
-        // Check if we have a baseline (from legacy data migration)
-        const weekData = dailyHistory?.[weekId];
-        const baseline = weekData?.['_baseline'] || 0;
-        
-        // Calculate how many merges belong to previous days (excluding baseline markers)
+        // Calculate how many merges belong to previous days
         let previousDaysMerges = 0;
         for (let i = 0; i < daysSinceStart; i++) {
             const prevDate = new Date(weekStartDate);
             prevDate.setDate(weekStartDate.getDate() + i);
             const prevDateKey = prevDate.toDateString();
-            previousDaysMerges += weekData?.[prevDateKey] || 0;
+            previousDaysMerges += dailyHistory?.[weekId]?.[prevDateKey] || 0;
         }
         
         // Calculate today's total
-        // If we have a baseline, only count merges above the baseline
-        let todaysMerges;
-        if (baseline > 0) {
-            // Only count increments above the baseline
-            const incrementAboveBaseline = Math.max(0, currentMerges - baseline);
-            todaysMerges = Math.max(0, incrementAboveBaseline - previousDaysMerges);
-        } else {
-            // Normal calculation
-            todaysMerges = Math.max(0, currentMerges - previousDaysMerges);
-        }
+        const todaysMerges = Math.max(0, currentMerges - previousDaysMerges);
         
         return {
             weekId,
             today,
             todaysMerges,
-            previousDaysMerges,
-            baseline
+            previousDaysMerges
         };
     }
 }
