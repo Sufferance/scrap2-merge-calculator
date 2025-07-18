@@ -27,6 +27,7 @@ class DataManager {
             await this.storage.initialize();
             await this.loadAllData();
             this.initialized = true;
+            console.log('DataManager initialized successfully');
         } catch (error) {
             console.error('Error initializing DataManager:', error);
             this.loadFallbackData();
@@ -290,12 +291,17 @@ class DataManager {
         const newValue = Math.max(0, parseInt(value) || 0);
         const increment = newValue - this.state.currentMerges;
         
-        if (newValue > this.state.currentMerges) {
+        if (increment > 0) {
+            // Only add the increment to today, don't recalculate the entire day
+            this.state.currentMerges = newValue;
+            this.addToCurrentDay(increment);
+            return increment;
+        } else if (increment < 0) {
+            // Handle decreases by updating total and recalculating
             this.state.currentMerges = newValue;
             this.updateCurrentDayTotal();
-            return increment;
         }
-        return 0;
+        return increment;
     }
 
     setMergeRatePer10Min(value) {
@@ -308,7 +314,27 @@ class DataManager {
 
     addMerges(amount) {
         this.state.currentMerges = Math.max(0, this.state.currentMerges + amount);
-        this.updateCurrentDayTotal();
+        this.addToCurrentDay(amount);
+    }
+
+    addToCurrentDay(amount) {
+        const now = new Date();
+        const weekId = this.calculationService.getWeekId(this.state.weekStartDate);
+        const daysSinceStart = this.calculationService.calculateDaysSinceStart(now, this.state.weekStartDate);
+        
+        // Get the date key for this day within the week
+        const dayDate = new Date(this.state.weekStartDate);
+        dayDate.setDate(this.state.weekStartDate.getDate() + daysSinceStart);
+        const today = this.calculationService.getDayKey(dayDate);
+        
+        if (!this.state.dailyHistory[weekId]) {
+            this.state.dailyHistory[weekId] = {};
+        }
+        
+        // Add the amount to today's total (or initialize if it doesn't exist)
+        const currentTodayMerges = this.state.dailyHistory[weekId][today] || 0;
+        this.state.dailyHistory[weekId][today] = currentTodayMerges + amount;
+        
     }
 
     updateCurrentDayTotal() {

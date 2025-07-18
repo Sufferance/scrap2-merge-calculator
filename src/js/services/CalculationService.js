@@ -233,14 +233,14 @@ class CalculationService {
     calculateDailyProgress(currentMerges, weekStartDate, dailyHistory) {
         const now = new Date();
         const weekId = this.getWeekId(weekStartDate);
-        const timeSinceStart = now - weekStartDate;
-        const daysSinceStart = Math.floor(timeSinceStart / this.MS_PER_DAY);
+        const daysSinceStart = this.calculateDaysSinceStart(now, weekStartDate);
         
         const dailyProgress = [];
         for (let i = 0; i <= daysSinceStart; i++) {
             const dayDate = new Date(weekStartDate);
             dayDate.setDate(weekStartDate.getDate() + i);
-            const dateKey = dayDate.toDateString();
+            dayDate.setHours(17, 0, 0, 0); // Set to 5pm for consistency
+            const dateKey = this.getDayKey(dayDate);
             
             // Get actual daily progress from stored data
             const mergesForDay = dailyHistory?.[weekId]?.[dateKey] || 0;
@@ -266,20 +266,19 @@ class CalculationService {
     calculateCurrentDayTotal(currentMerges, weekStartDate, dailyHistory) {
         const now = new Date();
         const weekId = this.getWeekId(weekStartDate);
-        const timeSinceStart = now - weekStartDate;
-        const daysSinceStart = Math.floor(timeSinceStart / this.MS_PER_DAY);
+        const daysSinceStart = this.calculateDaysSinceStart(now, weekStartDate);
         
         // Get the date key for this day within the week
         const dayDate = new Date(weekStartDate);
         dayDate.setDate(weekStartDate.getDate() + daysSinceStart);
-        const today = dayDate.toDateString();
+        const today = this.getDayKey(dayDate);
         
         // Calculate how many merges belong to previous days
         let previousDaysMerges = 0;
         for (let i = 0; i < daysSinceStart; i++) {
             const prevDate = new Date(weekStartDate);
             prevDate.setDate(weekStartDate.getDate() + i);
-            const prevDateKey = prevDate.toDateString();
+            const prevDateKey = this.getDayKey(prevDate);
             previousDaysMerges += dailyHistory?.[weekId]?.[prevDateKey] || 0;
         }
         
@@ -292,6 +291,30 @@ class CalculationService {
             todaysMerges,
             previousDaysMerges
         };
+    }
+
+    // Helper method to calculate days since start based on 5pm cutoff
+    calculateDaysSinceStart(currentTime, weekStartDate) {
+        const now = new Date(currentTime);
+        const start = new Date(weekStartDate);
+        
+        // Adjust current time: if it's before 5pm, consider it part of previous day
+        const adjustedNow = new Date(now);
+        if (now.getHours() < 17) {
+            adjustedNow.setDate(now.getDate() - 1);
+        }
+        adjustedNow.setHours(17, 0, 0, 0);
+        
+        // Calculate time difference from week start (which is already at 5pm)
+        const timeDiff = adjustedNow - start;
+        return Math.max(0, Math.floor(timeDiff / this.MS_PER_DAY));
+    }
+
+    // Helper method to generate consistent day keys
+    getDayKey(date) {
+        const keyDate = new Date(date);
+        keyDate.setHours(17, 0, 0, 0); // Normalize to 5pm
+        return keyDate.toDateString();
     }
 }
 
