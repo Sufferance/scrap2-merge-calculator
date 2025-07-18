@@ -114,6 +114,7 @@ class DataManager {
             if (!this.state.dailyHistory[weekId]) {
                 this.state.dailyHistory[weekId] = {};
             }
+            // Store cumulative total for migration
             this.state.dailyHistory[weekId][currentDayResult.today] = this.state.currentMerges;
         }
     }
@@ -322,7 +323,8 @@ class DataManager {
             this.state.dailyHistory[currentDayResult.weekId] = {};
         }
         
-        this.state.dailyHistory[currentDayResult.weekId][currentDayResult.today] = currentDayResult.todaysMerges;
+        // Store cumulative total instead of daily increment
+        this.state.dailyHistory[currentDayResult.weekId][currentDayResult.today] = this.state.currentMerges;
     }
 
     async saveCurrentWeekToHistory() {

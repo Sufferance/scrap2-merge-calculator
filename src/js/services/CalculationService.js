@@ -237,20 +237,27 @@ class CalculationService {
         const daysSinceStart = Math.floor(timeSinceStart / this.MS_PER_DAY);
         
         const dailyProgress = [];
+        let previousCumulative = 0;
+        
         for (let i = 0; i <= daysSinceStart; i++) {
             const dayDate = new Date(weekStartDate);
             dayDate.setDate(weekStartDate.getDate() + i);
             const dateKey = dayDate.toDateString();
             
-            // Get actual daily progress from stored data
-            const mergesForDay = dailyHistory?.[weekId]?.[dateKey] || 0;
+            // Get cumulative total for this day
+            const cumulativeForDay = dailyHistory?.[weekId]?.[dateKey] || previousCumulative;
+            
+            // Calculate the daily increment
+            const dailyIncrement = cumulativeForDay - previousCumulative;
             
             dailyProgress.push({
                 date: dayDate.toISOString(),
-                merges: mergesForDay,
+                merges: dailyIncrement,
                 dayOfWeek: dayDate.getDay(),
                 dateKey: dateKey
             });
+            
+            previousCumulative = cumulativeForDay;
         }
         
         return dailyProgress;
