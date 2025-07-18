@@ -102,19 +102,19 @@ class DataManager {
     migrateLegacyData() {
         const weekId = this.calculationService.getWeekId(this.state.weekStartDate);
         
-        // If we have current merges but no daily history for this week, 
-        // assign all current merges to today to prevent the chart from being empty
+        // If we have current merges but no daily history for this week,
+        // record the baseline and start tracking increments going forward
         if (this.state.currentMerges > 0 && (!this.state.dailyHistory[weekId] || Object.keys(this.state.dailyHistory[weekId]).length === 0)) {
-            const currentDayResult = this.calculationService.calculateCurrentDayTotal(
-                this.state.currentMerges,
-                this.state.weekStartDate,
-                this.state.dailyHistory
-            );
-            
             if (!this.state.dailyHistory[weekId]) {
                 this.state.dailyHistory[weekId] = {};
             }
-            this.state.dailyHistory[weekId][currentDayResult.today] = this.state.currentMerges;
+            
+            // Create a special marker to indicate we have a baseline but no daily breakdown
+            // This prevents the system from trying to assign all merges to today
+            this.state.dailyHistory[weekId]['_baseline'] = this.state.currentMerges;
+            this.state.dailyHistory[weekId]['_baselineDate'] = new Date().toISOString();
+            
+            // Don't assign any merges to specific days - let future updates be tracked properly
         }
     }
 
@@ -290,9 +290,14 @@ class DataManager {
         const newValue = Math.max(0, parseInt(value) || 0);
         const increment = newValue - this.state.currentMerges;
         
-        if (newValue > this.state.currentMerges) {
-            this.state.currentMerges = newValue;
-            this.updateCurrentDayTotal();
+        // Update the current merge count
+        this.state.currentMerges = newValue;
+        
+        // Always update current day total for real-time chart updates
+        this.updateCurrentDayTotal();
+        
+        // Only return increment if value increased (for tracking purposes)
+        if (increment > 0) {
             return increment;
         }
         return 0;
