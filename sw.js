@@ -1,5 +1,5 @@
 // Service Worker for Scrap Calculator PWA
-const CACHE_NAME = 'scrap-calculator-v3';
+const CACHE_NAME = `scrap-calculator-v${Date.now()}`;
 const urlsToCache = [
     '/',
     '/index.html',
