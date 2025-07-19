@@ -19,8 +19,8 @@ class ProgressCharts {
     }
 
     createCharts() {
-        this.createWeeklyTrendChart();
         this.createDailyProgressChart();
+        this.createWeeklyTrendChart();
         this.createAchievementChart();
         this.createComparisonChart();
     }
