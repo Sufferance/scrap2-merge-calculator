@@ -242,7 +242,32 @@ class DataManager {
     async importData(data) {
         try {
             await this.storage.importData(data);
-            await this.loadAllData();
+            
+            // Load the imported data without triggering current day updates
+            const savedData = await this.storage.loadCurrentProgress();
+            if (savedData) {
+                this.state.currentMerges = savedData.currentMerges || 0;
+                this.state.mergeRatePer10Min = savedData.mergeRatePer10Min || 0;
+                this.state.targetGoal = savedData.targetGoal || 50000;
+                
+                // Preserve the imported daily history completely
+                this.state.dailyHistory = savedData.dailyHistory || {};
+                
+                // Parse date strings back to Date objects
+                if (savedData.weekStartDate) {
+                    this.state.weekStartDate = new Date(savedData.weekStartDate);
+                }
+                if (savedData.weekEndDate) {
+                    this.state.weekEndDate = new Date(savedData.weekEndDate);
+                }
+            }
+            
+            // Load weekly history
+            const historyData = await this.storage.loadWeeklyHistory();
+            this.state.weeklyHistory = historyData || [];
+            
+            // Update week bounds if needed (but don't update current day total yet)
+            this.updateWeekBounds();
         } catch (error) {
             console.error('Error importing data:', error);
             throw error;
@@ -323,8 +348,12 @@ class DataManager {
             this.state.dailyHistory[currentDayResult.weekId] = {};
         }
         
-        // Store cumulative total instead of daily increment
-        this.state.dailyHistory[currentDayResult.weekId][currentDayResult.today] = this.state.currentMerges;
+        // Only update if the merge count has actually changed from what's stored
+        const existingTotal = this.state.dailyHistory[currentDayResult.weekId][currentDayResult.today];
+        if (existingTotal === undefined || this.state.currentMerges !== existingTotal) {
+            // Store cumulative total instead of daily increment
+            this.state.dailyHistory[currentDayResult.weekId][currentDayResult.today] = this.state.currentMerges;
+        }
     }
 
     async saveCurrentWeekToHistory() {
