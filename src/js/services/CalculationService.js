@@ -238,7 +238,9 @@ class CalculationService {
         const dailyProgress = [];
         let previousCumulative = 0;
 
-        for (let i = 0; i <= daysSinceStart && i < 7; i++) { // Limit to 7 days
+        // Check all days in the week, not just up to current day
+        // This ensures imported data for future days is displayed
+        for (let i = 0; i < 7; i++) {
             const dayDate = new Date(weekStartDate);
             dayDate.setDate(weekStartDate.getDate() + i);
             const dateKey = dayDate.toDateString();
@@ -247,14 +249,19 @@ class CalculationService {
             const cumulativeForDay = dailyHistory?.[weekId]?.[dateKey];
             
             let dailyIncrement;
-            if (cumulativeForDay === undefined && i < daysSinceStart) {
-                // Missing historical day - show as 0
-                dailyIncrement = 0;
-            } else if (cumulativeForDay === undefined && i === daysSinceStart) {
-                // Current day with no data yet
-                dailyIncrement = Math.max(0, currentMerges - previousCumulative);
+            if (cumulativeForDay === undefined) {
+                if (i < daysSinceStart) {
+                    // Missing historical day - show as 0
+                    dailyIncrement = 0;
+                } else if (i === daysSinceStart) {
+                    // Current day with no data yet
+                    dailyIncrement = Math.max(0, currentMerges - previousCumulative);
+                } else {
+                    // Future day with no data - don't show
+                    continue;
+                }
             } else {
-                // Has data
+                // Has data (including imported data for any day)
                 dailyIncrement = Math.max(0, cumulativeForDay - previousCumulative);
                 previousCumulative = cumulativeForDay;
             }

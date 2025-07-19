@@ -326,6 +326,7 @@ class AppController {
             // Reload UI
             await this.services.data.loadAllData();
             this.updateUI();
+            this.updateCharts();
             
             this.services.display.updateSyncDisplay({
                 success: true,
