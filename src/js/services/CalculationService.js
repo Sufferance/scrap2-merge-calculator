@@ -231,6 +231,9 @@ class CalculationService {
     }
 
     calculateDailyProgress(currentMerges, weekStartDate, dailyHistory) {
+        if (!weekStartDate) {
+            return [];
+        }
         const now = new Date();
         const weekId = this.getWeekId(weekStartDate);
         const daysSinceStart = this.getDayIndexSince5pm(weekStartDate, now);
@@ -278,6 +281,9 @@ class CalculationService {
     }
 
     getWeekId(weekStartDate) {
+        if (!weekStartDate) {
+            return null;
+        }
         const year = weekStartDate.getFullYear();
         const month = weekStartDate.getMonth() + 1;
         const day = weekStartDate.getDate();
