@@ -84,37 +84,6 @@ self.addEventListener('fetch', (event) => {
     );
 });
 
-// Background sync for future sync feature
-self.addEventListener('sync', (event) => {
-    if (event.tag === 'background-sync-data') {
-        event.waitUntil(
-            // This will be implemented in Phase 2 for sync codes
-            console.log('Background sync triggered')
-        );
-    }
-});
-
-// Push notifications (placeholder for future features)
-self.addEventListener('push', (event) => {
-    const options = {
-        body: event.data ? event.data.text() : 'Weekly goal reminder',
-        vibrate: [100, 50, 100],
-        data: {
-            dateOfArrival: Date.now(),
-            primaryKey: 1
-        }
-    };
-
-    event.waitUntil(
-        self.registration.showNotification('Scrap Calculator', options)
-    );
-});
-
-// Notification click handler
-self.addEventListener('notificationclick', (event) => {
-    event.notification.close();
-    
-    event.waitUntil(
-        clients.openWindow('/')
-    );
-});
+// TODO: Background sync will be implemented in Phase 2 for sync codes
+// TODO: Push notifications will be implemented for weekly goal reminders
+// TODO: Notification click handler will be added with push notifications

@@ -42,10 +42,3 @@ window.ScrapCalculatorAPI = {
     }
 };
 
-// Legacy compatibility layer (if needed)
-window.ScrapCalculator = class {
-    constructor() {
-        console.warn('ScrapCalculator class is deprecated. Use AppController instead.');
-        return window.scrapCalculator;
-    }
-};

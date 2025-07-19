@@ -353,10 +353,10 @@ class DisplayManager {
 
     clearSyncResults() {
         if (this.elements.exportResult) {
-            this.elements.exportResult.innerHTML = '';
+            this.elements.exportResult.textContent = '';
         }
         if (this.elements.importResult) {
-            this.elements.importResult.innerHTML = '';
+            this.elements.importResult.textContent = '';
         }
     }
 

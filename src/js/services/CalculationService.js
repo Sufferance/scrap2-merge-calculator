@@ -231,23 +231,47 @@ class CalculationService {
     }
 
     calculateDailyProgress(currentMerges, weekStartDate, dailyHistory) {
+        if (!weekStartDate) {
+            return [];
+        }
         const now = new Date();
         const weekId = this.getWeekId(weekStartDate);
-        const timeSinceStart = now - weekStartDate;
-        const daysSinceStart = Math.floor(timeSinceStart / this.MS_PER_DAY);
-        
+        const daysSinceStart = this.getDayIndexSince5pm(weekStartDate, now);
+
         const dailyProgress = [];
-        for (let i = 0; i <= daysSinceStart; i++) {
+        let previousCumulative = 0;
+
+        // Check all days in the week, not just up to current day
+        // This ensures imported data for future days is displayed
+        for (let i = 0; i < 7; i++) {
             const dayDate = new Date(weekStartDate);
             dayDate.setDate(weekStartDate.getDate() + i);
             const dateKey = dayDate.toDateString();
+
+            // Get cumulative total for this day
+            const cumulativeForDay = dailyHistory?.[weekId]?.[dateKey];
             
-            // Get actual daily progress from stored data
-            const mergesForDay = dailyHistory?.[weekId]?.[dateKey] || 0;
-            
+            let dailyIncrement;
+            if (cumulativeForDay === undefined) {
+                if (i < daysSinceStart) {
+                    // Missing historical day - show as 0
+                    dailyIncrement = 0;
+                } else if (i === daysSinceStart) {
+                    // Current day with no data yet
+                    dailyIncrement = Math.max(0, currentMerges - previousCumulative);
+                } else {
+                    // Future day with no data - don't show
+                    continue;
+                }
+            } else {
+                // Has data (including imported data for any day)
+                dailyIncrement = Math.max(0, cumulativeForDay - previousCumulative);
+                previousCumulative = cumulativeForDay;
+            }
+
             dailyProgress.push({
                 date: dayDate.toISOString(),
-                merges: mergesForDay,
+                merges: dailyIncrement,
                 dayOfWeek: dayDate.getDay(),
                 dateKey: dateKey
             });
@@ -257,17 +281,35 @@ class CalculationService {
     }
 
     getWeekId(weekStartDate) {
+        if (!weekStartDate) {
+            return null;
+        }
         const year = weekStartDate.getFullYear();
         const month = weekStartDate.getMonth() + 1;
         const day = weekStartDate.getDate();
         return `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
     }
 
+    getDayIndexSince5pm(weekStartDate, currentDate) {
+        // Week starts at Sunday 5pm
+        const timeSinceStart = currentDate - weekStartDate;
+        const hoursSinceStart = timeSinceStart / (1000 * 60 * 60);
+        
+        // Each day is 24 hours starting from 5pm
+        return Math.floor(hoursSinceStart / 24);
+    }
+
+    getCurrentDayDateKey(weekStartDate, currentDate) {
+        const dayIndex = this.getDayIndexSince5pm(weekStartDate, currentDate);
+        const dayDate = new Date(weekStartDate);
+        dayDate.setDate(weekStartDate.getDate() + dayIndex);
+        return dayDate.toDateString();
+    }
+
     calculateCurrentDayTotal(currentMerges, weekStartDate, dailyHistory) {
         const now = new Date();
         const weekId = this.getWeekId(weekStartDate);
-        const timeSinceStart = now - weekStartDate;
-        const daysSinceStart = Math.floor(timeSinceStart / this.MS_PER_DAY);
+        const daysSinceStart = this.getDayIndexSince5pm(weekStartDate, now);
         
         // Get the date key for this day within the week
         const dayDate = new Date(weekStartDate);
@@ -280,7 +322,10 @@ class CalculationService {
             const prevDate = new Date(weekStartDate);
             prevDate.setDate(weekStartDate.getDate() + i);
             const prevDateKey = prevDate.toDateString();
-            previousDaysMerges += dailyHistory?.[weekId]?.[prevDateKey] || 0;
+            const prevDayTotal = dailyHistory?.[weekId]?.[prevDateKey];
+            if (prevDayTotal !== undefined) {
+                previousDaysMerges = Math.max(previousDaysMerges, prevDayTotal);
+            }
         }
         
         // Calculate today's total

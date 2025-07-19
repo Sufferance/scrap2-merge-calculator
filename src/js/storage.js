@@ -66,6 +66,7 @@ class StorageManager {
                 targetGoal: progressData.targetGoal,
                 weekStartDate: progressData.weekStartDate,
                 weekEndDate: progressData.weekEndDate,
+                dailyHistory: progressData.dailyHistory,
                 lastUpdated: new Date().toISOString()
             };
 
@@ -193,105 +194,5 @@ class StorageManager {
     }
 }
 
-// Fallback to localStorage if IndexedDB is not available
-class FallbackStorage {
-    constructor() {
-        this.prefix = 'scrapCalc_';
-    }
-
-    async initialize() {
-        return Promise.resolve();
-    }
-
-    async saveCurrentProgress(progressData) {
-        const data = {
-            id: 'current',
-            currentMerges: progressData.currentMerges,
-            mergeRatePer10Min: progressData.mergeRatePer10Min,
-            targetGoal: progressData.targetGoal,
-            weekStartDate: progressData.weekStartDate,
-            weekEndDate: progressData.weekEndDate,
-            lastUpdated: new Date().toISOString()
-        };
-        
-        localStorage.setItem(this.prefix + 'currentProgress', JSON.stringify(data));
-        return Promise.resolve();
-    }
-
-    async loadCurrentProgress() {
-        const data = localStorage.getItem(this.prefix + 'currentProgress');
-        return Promise.resolve(data ? JSON.parse(data) : null);
-    }
-
-    async saveSetting(key, value) {
-        localStorage.setItem(this.prefix + 'setting_' + key, JSON.stringify(value));
-        return Promise.resolve();
-    }
-
-    async loadSetting(key) {
-        const data = localStorage.getItem(this.prefix + 'setting_' + key);
-        return Promise.resolve(data ? JSON.parse(data) : null);
-    }
-
-    async saveWeeklyHistory(weekData) {
-        const existing = JSON.parse(localStorage.getItem(this.prefix + 'weeklyHistory') || '[]');
-        const index = existing.findIndex(w => w.weekId === weekData.weekId);
-        
-        if (index >= 0) {
-            existing[index] = weekData;
-        } else {
-            existing.push(weekData);
-        }
-        
-        localStorage.setItem(this.prefix + 'weeklyHistory', JSON.stringify(existing));
-        return Promise.resolve();
-    }
-
-    async loadWeeklyHistory() {
-        const data = localStorage.getItem(this.prefix + 'weeklyHistory');
-        return Promise.resolve(data ? JSON.parse(data) : []);
-    }
-
-    async clearAllData() {
-        const keys = Object.keys(localStorage).filter(key => key.startsWith(this.prefix));
-        keys.forEach(key => localStorage.removeItem(key));
-        return Promise.resolve();
-    }
-
-    async exportData() {
-        const currentProgress = await this.loadCurrentProgress();
-        const weeklyHistory = await this.loadWeeklyHistory();
-        
-        return {
-            currentProgress,
-            weeklyHistory,
-            exportedAt: new Date().toISOString(),
-            version: 1
-        };
-    }
-
-    async importData(data) {
-        if (data.currentProgress) {
-            await this.saveCurrentProgress(data.currentProgress);
-        }
-
-        if (data.weeklyHistory && Array.isArray(data.weeklyHistory)) {
-            for (const weekData of data.weeklyHistory) {
-                await this.saveWeeklyHistory(weekData);
-            }
-        }
-    }
-}
-
-// Factory function to create appropriate storage manager
-function createStorageManager() {
-    if ('indexedDB' in window) {
-        return new StorageManager();
-    } else {
-        console.warn('IndexedDB not available, falling back to localStorage');
-        return new FallbackStorage();
-    }
-}
-
 // Export for use in main app
-window.StorageManager = createStorageManager();
+window.StorageManager = new StorageManager();
