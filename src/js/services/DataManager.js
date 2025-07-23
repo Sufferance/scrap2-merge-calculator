@@ -56,8 +56,13 @@ class DataManager {
             const historyData = await this.storage.loadWeeklyHistory();
             this.state.weeklyHistory = historyData || [];
             
-            // Update week bounds if needed
-            this.updateWeekBounds();
+            // Check for week transition before updating bounds
+            if (this.state.weekEndDate && this.checkWeekTransition()) {
+                await this.handleWeekTransition();
+            } else {
+                // Update week bounds if needed (only if no transition occurred)
+                this.updateWeekBounds();
+            }
             
             // Handle migration from old system
             this.migrateLegacyData();
@@ -140,15 +145,16 @@ class DataManager {
 
     async saveWeeklyHistory(weekData) {
         try {
-            await this.storage.saveWeeklyHistory(weekData);
-            
-            // Update local state
+            // Update local state first
             const existingIndex = this.state.weeklyHistory.findIndex(w => w.weekId === weekData.weekId);
             if (existingIndex >= 0) {
                 this.state.weeklyHistory[existingIndex] = weekData;
             } else {
                 this.state.weeklyHistory.push(weekData);
             }
+            
+            // Save the entire weekly history array
+            await this.storage.saveWeeklyHistory(this.state.weeklyHistory);
         } catch (error) {
             console.error('Error saving weekly history:', error);
         }
@@ -301,6 +307,74 @@ class DataManager {
 
     getWeeklyHistory() {
         return this.state.weeklyHistory;
+    }
+
+    getCombinedWeeklyData() {
+        // Get historical weeks
+        const historicalWeeks = [...this.state.weeklyHistory];
+        
+        // Add current week if it has valid bounds
+        if (this.state.weekStartDate && this.state.weekEndDate) {
+            const currentWeekId = this.calculationService.getWeekId(this.state.weekStartDate);
+            
+            // Check if current week is already in history (shouldn't be, but just in case)
+            const existsInHistory = historicalWeeks.some(week => week.weekId === currentWeekId);
+            
+            if (!existsInHistory) {
+                const currentWeekData = {
+                    weekId: currentWeekId,
+                    weekStart: this.state.weekStartDate.toISOString(),
+                    weekEnd: this.state.weekEndDate.toISOString(),
+                    finalMerges: this.state.currentMerges,
+                    targetGoal: this.state.targetGoal,
+                    mergeRatePer10Min: this.state.mergeRatePer10Min,
+                    completed: this.state.currentMerges >= this.state.targetGoal,
+                    achievementRate: Math.round((this.state.currentMerges / this.state.targetGoal) * 100),
+                    isCurrentWeek: true
+                };
+                
+                historicalWeeks.push(currentWeekData);
+            }
+        }
+        
+        // Sort by week start date
+        return historicalWeeks.sort((a, b) => new Date(a.weekStart) - new Date(b.weekStart));
+    }
+
+    getWeeklyTooltipData(weekId, weekData = null) {
+        let data;
+        
+        if (weekData) {
+            data = weekData;
+        } else {
+            // Find from combined data
+            const combinedData = this.getCombinedWeeklyData();
+            data = combinedData.find(week => week.weekId === weekId);
+            if (!data) return null;
+        }
+        
+        const startDate = new Date(data.weekStart);
+        const endDate = new Date(data.weekEnd);
+        
+        const dateRange = `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        
+        const merges = data.finalMerges.toLocaleString();
+        const target = data.targetGoal.toLocaleString();
+        const percentage = Math.round((data.finalMerges / data.targetGoal) * 100);
+        
+        let status = `${percentage}% of target`;
+        if (data.completed) {
+            status += ' (✓ Goal reached!)';
+        }
+        
+        return {
+            dateRange,
+            merges,
+            target,
+            status,
+            weekType: data.isCurrentWeek ? 'Current Week' : 'Completed Week',
+            percentage
+        };
     }
 
     getDailyProgress() {

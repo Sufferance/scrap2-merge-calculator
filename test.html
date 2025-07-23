@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scrap Calculator Tests</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .test-result { margin: 10px 0; padding: 5px; border-radius: 3px; }
+        .pass { background-color: #d4edda; color: #155724; }
+        .fail { background-color: #f8d7da; color: #721c24; }
+        .test-suite { margin: 20px 0; border: 1px solid #ccc; padding: 15px; }
+        .test-suite h3 { margin-top: 0; }
+    </style>
+</head>
+<body>
+    <h1>Scrap Calculator Tests</h1>
+    <div id="test-results"></div>
+
+    <!-- Include required classes -->
+    <script src="src/js/services/CalculationService.js"></script>
+    <script src="src/js/storage.js"></script>
+    <script src="src/js/services/DataManager.js"></script>
+
+    <script>
+        // Simple test framework
+        class TestRunner {
+            constructor() {
+                this.results = [];
+                this.currentSuite = null;
+            }
+
+            describe(name, fn) {
+                this.currentSuite = name;
+                console.log(`\n--- ${name} ---`);
+                fn();
+                this.renderResults();
+            }
+
+            test(name, fn) {
+                try {
+                    fn();
+                    this.results.push({
+                        suite: this.currentSuite,
+                        name: name,
+                        status: 'pass',
+                        error: null
+                    });
+                    console.log(`✓ ${name}`);
+                } catch (error) {
+                    this.results.push({
+                        suite: this.currentSuite,
+                        name: name,
+                        status: 'fail',
+                        error: error.message
+                    });
+                    console.log(`✗ ${name}: ${error.message}`);
+                }
+            }
+
+            expect(actual) {
+                return {
+                    toBe: (expected) => {
+                        if (actual !== expected) {
+                            throw new Error(`Expected ${expected}, but got ${actual}`);
+                        }
+                    },
+                    toEqual: (expected) => {
+                        if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+                            throw new Error(`Expected ${JSON.stringify(expected)}, but got ${JSON.stringify(actual)}`);
+                        }
+                    },
+                    toBeTruthy: () => {
+                        if (!actual) {
+                            throw new Error(`Expected truthy value, but got ${actual}`);
+                        }
+                    },
+                    toBeFalsy: () => {
+                        if (actual) {
+                            throw new Error(`Expected falsy value, but got ${actual}`);
+                        }
+                    },
+                    toBeGreaterThan: (expected) => {
+                        if (actual <= expected) {
+                            throw new Error(`Expected ${actual} to be greater than ${expected}`);
+                        }
+                    },
+                    toHaveLength: (expected) => {
+                        if (actual.length !== expected) {
+                            throw new Error(`Expected length ${expected}, but got ${actual.length}`);
+                        }
+                    }
+                };
+            }
+
+            renderResults() {
+                const container = document.getElementById('test-results');
+                const suiteDiv = document.createElement('div');
+                suiteDiv.className = 'test-suite';
+                suiteDiv.innerHTML = `<h3>${this.currentSuite}</h3>`;
+
+                const suiteResults = this.results.filter(r => r.suite === this.currentSuite);
+                suiteResults.forEach(result => {
+                    const div = document.createElement('div');
+                    div.className = `test-result ${result.status}`;
+                    div.innerHTML = `${result.status === 'pass' ? '✓' : '✗'} ${result.name}`;
+                    if (result.error) {
+                        div.innerHTML += `<br><small>${result.error}</small>`;
+                    }
+                    suiteDiv.appendChild(div);
+                });
+
+                container.appendChild(suiteDiv);
+            }
+        }
+
+        const runner = new TestRunner();
+
+        // Mock IndexedDB for testing
+        class MockStorageManager {
+            constructor() {
+                this.data = {};
+                this.weeklyHistory = [];
+            }
+
+            async initialize() {
+                return Promise.resolve();
+            }
+
+            async saveCurrentProgress(data) {
+                this.data.currentProgress = data;
+                return Promise.resolve();
+            }
+
+            async loadCurrentProgress() {
+                return Promise.resolve(this.data.currentProgress);
+            }
+
+            async saveWeeklyHistory(weeklyHistory) {
+                this.weeklyHistory = weeklyHistory;
+                return Promise.resolve();
+            }
+
+            async loadWeeklyHistory() {
+                return Promise.resolve(this.weeklyHistory);
+            }
+
+            async clearAllData() {
+                this.data = {};
+                this.weeklyHistory = [];
+                return Promise.resolve();
+            }
+
+            async exportData() {
+                return Promise.resolve({
+                    currentProgress: this.data.currentProgress || {},
+                    weeklyHistory: this.weeklyHistory
+                });
+            }
+
+            async importData(data) {
+                if (data.currentProgress) {
+                    this.data.currentProgress = data.currentProgress;
+                }
+                if (data.weeklyHistory) {
+                    this.weeklyHistory = data.weeklyHistory;
+                }
+                return Promise.resolve();
+            }
+
+            async saveSetting(key, value) {
+                if (!this.data.settings) this.data.settings = {};
+                this.data.settings[key] = value;
+                return Promise.resolve();
+            }
+
+            async loadSetting(key) {
+                return Promise.resolve(this.data.settings?.[key]);
+            }
+        }
+
+        // Weekly Chart Tooltip Tests
+        runner.describe('Weekly Chart Tooltip Formatting', () => {
+            runner.test('should format tooltip with week date range', () => {
+                const mockStorage = new MockStorageManager();
+                const dataManager = new DataManager(mockStorage);
+                
+                dataManager.state.weekStartDate = new Date('2025-07-20T17:00:00.000Z');
+                dataManager.state.weekEndDate = new Date('2025-07-27T17:00:00.000Z');
+                dataManager.state.currentMerges = 30000;
+                dataManager.state.targetGoal = 50000;
+                
+                const tooltipData = dataManager.getWeeklyTooltipData('2025-07-20');
+                
+                runner.expect(tooltipData.dateRange).toBe('Jul 20 - Jul 27');
+                runner.expect(tooltipData.merges).toBe('30,000');
+                runner.expect(tooltipData.target).toBe('50,000');
+                runner.expect(tooltipData.status).toBe('60% of target');
+            });
+
+            runner.test('should handle completed weeks in tooltip', () => {
+                const mockStorage = new MockStorageManager();
+                const dataManager = new DataManager(mockStorage);
+                
+                const weekData = {
+                    weekId: '2025-07-13',
+                    weekStart: '2025-07-13T17:00:00.000Z',
+                    weekEnd: '2025-07-20T17:00:00.000Z',
+                    finalMerges: 52000,
+                    targetGoal: 50000,
+                    completed: true
+                };
+                
+                const tooltipData = dataManager.getWeeklyTooltipData('2025-07-13', weekData);
+                
+                runner.expect(tooltipData.status).toBe('104% of target (✓ Goal reached!)');
+                runner.expect(tooltipData.merges).toBe('52,000');
+            });
+
+            runner.test('should distinguish current week in tooltip', () => {
+                const mockStorage = new MockStorageManager();
+                const dataManager = new DataManager(mockStorage);
+                
+                dataManager.state.weekStartDate = new Date('2025-07-20T17:00:00.000Z');
+                dataManager.state.weekEndDate = new Date('2025-07-27T17:00:00.000Z');
+                dataManager.state.currentMerges = 25000;
+                
+                const tooltipData = dataManager.getWeeklyTooltipData('2025-07-20');
+                
+                runner.expect(tooltipData.weekType).toBe('Current Week');
+                runner.expect(tooltipData.dateRange).toBe('Jul 20 - Jul 27');
+            });
+        });
+
+        // Weekly Chart Data Aggregation Tests
+        runner.describe('Weekly Chart Data Aggregation', () => {
+            runner.test('should combine weeklyHistory with current week data', () => {
+                const mockStorage = new MockStorageManager();
+                const dataManager = new DataManager(mockStorage);
+                
+                // Mock historical weeks
+                dataManager.state.weeklyHistory = [
+                    {
+                        weekId: '2025-07-06',
+                        weekStart: '2025-07-06T17:00:00.000Z',
+                        weekEnd: '2025-07-13T17:00:00.000Z',
+                        finalMerges: 48000,
+                        targetGoal: 50000,
+                        completed: false,
+                        achievementRate: 96
+                    },
+                    {
+                        weekId: '2025-07-13',
+                        weekStart: '2025-07-13T17:00:00.000Z',
+                        weekEnd: '2025-07-20T17:00:00.000Z',
+                        finalMerges: 52000,
+                        targetGoal: 50000,
+                        completed: true,
+                        achievementRate: 104
+                    }
+                ];
+                
+                // Current week
+                dataManager.state.weekStartDate = new Date('2025-07-20T17:00:00.000Z');
+                dataManager.state.weekEndDate = new Date('2025-07-27T17:00:00.000Z');
+                dataManager.state.currentMerges = 25000;
+                dataManager.state.targetGoal = 50000;
+                
+                // Get combined weekly data
+                const combinedWeeklyData = dataManager.getCombinedWeeklyData();
+                
+                runner.expect(combinedWeeklyData).toHaveLength(3);
+                runner.expect(combinedWeeklyData[2].weekId).toBe('2025-07-20');
+                runner.expect(combinedWeeklyData[2].finalMerges).toBe(25000);
+                runner.expect(combinedWeeklyData[2].isCurrentWeek).toBeTruthy();
+            });
+
+            runner.test('should handle empty weeklyHistory gracefully', () => {
+                const mockStorage = new MockStorageManager();
+                const dataManager = new DataManager(mockStorage);
+                
+                // No historical weeks
+                dataManager.state.weeklyHistory = [];
+                
+                // Current week only
+                dataManager.state.weekStartDate = new Date('2025-07-20T17:00:00.000Z');
+                dataManager.state.weekEndDate = new Date('2025-07-27T17:00:00.000Z');
+                dataManager.state.currentMerges = 15000;
+                dataManager.state.targetGoal = 50000;
+                
+                // Get combined weekly data
+                const combinedWeeklyData = dataManager.getCombinedWeeklyData();
+                
+                runner.expect(combinedWeeklyData).toHaveLength(1);
+                runner.expect(combinedWeeklyData[0].weekId).toBe('2025-07-20');
+                runner.expect(combinedWeeklyData[0].finalMerges).toBe(15000);
+                runner.expect(combinedWeeklyData[0].isCurrentWeek).toBeTruthy();
+            });
+
+            runner.test('should properly order weeks chronologically', () => {
+                const mockStorage = new MockStorageManager();
+                const dataManager = new DataManager(mockStorage);
+                
+                // Historical weeks in random order
+                dataManager.state.weeklyHistory = [
+                    {
+                        weekId: '2025-07-13',
+                        weekStart: '2025-07-13T17:00:00.000Z',
+                        finalMerges: 52000
+                    },
+                    {
+                        weekId: '2025-07-06',
+                        weekStart: '2025-07-06T17:00:00.000Z',
+                        finalMerges: 48000
+                    }
+                ];
+                
+                // Current week
+                dataManager.state.weekStartDate = new Date('2025-07-20T17:00:00.000Z');
+                dataManager.state.weekEndDate = new Date('2025-07-27T17:00:00.000Z');
+                dataManager.state.currentMerges = 25000;
+                
+                const combinedWeeklyData = dataManager.getCombinedWeeklyData();
+                
+                // Should be ordered chronologically
+                runner.expect(combinedWeeklyData[0].weekId).toBe('2025-07-06');
+                runner.expect(combinedWeeklyData[1].weekId).toBe('2025-07-13');
+                runner.expect(combinedWeeklyData[2].weekId).toBe('2025-07-20');
+            });
+
+            runner.test('should include proper chart tooltip data', () => {
+                const mockStorage = new MockStorageManager();
+                const dataManager = new DataManager(mockStorage);
+                
+                dataManager.state.weekStartDate = new Date('2025-07-20T17:00:00.000Z');
+                dataManager.state.weekEndDate = new Date('2025-07-27T17:00:00.000Z');
+                dataManager.state.currentMerges = 30000;
+                dataManager.state.targetGoal = 50000;
+                
+                const combinedWeeklyData = dataManager.getCombinedWeeklyData();
+                const currentWeek = combinedWeeklyData[0];
+                
+                runner.expect(currentWeek.weekStart).toBe('2025-07-20T17:00:00.000Z');
+                runner.expect(currentWeek.weekEnd).toBe('2025-07-27T17:00:00.000Z');
+                runner.expect(currentWeek.targetGoal).toBe(50000);
+                runner.expect(currentWeek.achievementRate).toBe(60);
+            });
+        });
+
+        // Weekly Data Archiving Tests
+        runner.describe('Weekly Data Archiving', () => {
+            runner.test('should detect when current week has ended', async () => {
+                const mockStorage = new MockStorageManager();
+                const dataManager = new DataManager(mockStorage);
+                await dataManager.initialize();
+
+                // Set up a week that has already ended
+                const pastWeekEnd = new Date();
+                pastWeekEnd.setDate(pastWeekEnd.getDate() - 1); // Yesterday
+                pastWeekEnd.setHours(17, 0, 0, 0);
+                
+                dataManager.state.weekEndDate = pastWeekEnd;
+                
+                const hasEnded = dataManager.checkWeekTransition();
+                runner.expect(hasEnded).toBeTruthy();
+            });
+
+            runner.test('should not detect transition when week is still active', async () => {
+                const mockStorage = new MockStorageManager();
+                const dataManager = new DataManager(mockStorage);
+                await dataManager.initialize();
+
+                // Set up a week that hasn't ended yet
+                const futureWeekEnd = new Date();
+                futureWeekEnd.setDate(futureWeekEnd.getDate() + 2); // Day after tomorrow
+                futureWeekEnd.setHours(17, 0, 0, 0);
+                
+                dataManager.state.weekEndDate = futureWeekEnd;
+                
+                const hasEnded = dataManager.checkWeekTransition();
+                runner.expect(hasEnded).toBeFalsy();
+            });
+
+            runner.test('should archive completed week data to history', async () => {
+                const mockStorage = new MockStorageManager();
+                const dataManager = new DataManager(mockStorage);
+                await dataManager.initialize();
+
+                // Set up test data for a completed week
+                const weekStart = new Date('2025-07-20T17:00:00.000Z'); // Previous Sunday 5pm
+                const weekEnd = new Date('2025-07-27T17:00:00.000Z');   // Next Sunday 5pm
+                
+                dataManager.state.weekStartDate = weekStart;
+                dataManager.state.weekEndDate = weekEnd;
+                dataManager.state.currentMerges = 45000;
+                dataManager.state.targetGoal = 50000;
+                dataManager.state.mergeRatePer10Min = 125;
+
+                // Archive the week
+                const archivedWeek = await dataManager.saveCurrentWeekToHistory();
+
+                // Verify the archived data structure
+                runner.expect(archivedWeek.weekId).toBe('2025-07-20');
+                runner.expect(archivedWeek.finalMerges).toBe(45000);
+                runner.expect(archivedWeek.targetGoal).toBe(50000);
+                runner.expect(archivedWeek.completed).toBeFalsy();
+                runner.expect(archivedWeek.achievementRate).toBe(90);
+            });
+
+            runner.test('should mark week as completed when goal is reached', async () => {
+                const mockStorage = new MockStorageManager();
+                const dataManager = new DataManager(mockStorage);
+                await dataManager.initialize();
+
+                // Set up test data for a completed week with goal reached
+                const weekStart = new Date('2025-07-20T17:00:00.000Z');
+                const weekEnd = new Date('2025-07-27T17:00:00.000Z');
+                
+                dataManager.state.weekStartDate = weekStart;
+                dataManager.state.weekEndDate = weekEnd;
+                dataManager.state.currentMerges = 52000; // Exceeded goal
+                dataManager.state.targetGoal = 50000;
+
+                // Archive the week
+                const archivedWeek = await dataManager.saveCurrentWeekToHistory();
+
+                // Verify it's marked as completed
+                runner.expect(archivedWeek.completed).toBeTruthy();
+                runner.expect(archivedWeek.achievementRate).toBe(104);
+            });
+
+            runner.test('should reset current progress after week transition', async () => {
+                const mockStorage = new MockStorageManager();
+                const dataManager = new DataManager(mockStorage);
+                await dataManager.initialize();
+
+                // Set up initial state
+                dataManager.state.currentMerges = 45000;
+                dataManager.state.mergeRatePer10Min = 125;
+                dataManager.state.targetGoal = 50000;
+
+                // Mock a week that has ended
+                const pastWeekEnd = new Date();
+                pastWeekEnd.setDate(pastWeekEnd.getDate() - 1);
+                pastWeekEnd.setHours(17, 0, 0, 0);
+                dataManager.state.weekEndDate = pastWeekEnd;
+
+                // Handle the transition
+                await dataManager.handleWeekTransition();
+
+                // Verify current merges were reset
+                runner.expect(dataManager.state.currentMerges).toBe(0);
+                
+                // Verify settings were preserved
+                runner.expect(dataManager.state.mergeRatePer10Min).toBe(125);
+                runner.expect(dataManager.state.targetGoal).toBe(50000);
+            });
+
+            runner.test('should update week bounds after transition', async () => {
+                const mockStorage = new MockStorageManager();
+                const dataManager = new DataManager(mockStorage);
+                await dataManager.initialize();
+
+                const originalWeekStart = dataManager.state.weekStartDate;
+                const originalWeekEnd = dataManager.state.weekEndDate;
+
+                // Mock a week that has ended
+                const pastWeekEnd = new Date();
+                pastWeekEnd.setDate(pastWeekEnd.getDate() - 1);
+                pastWeekEnd.setHours(17, 0, 0, 0);
+                dataManager.state.weekEndDate = pastWeekEnd;
+
+                // Handle the transition
+                await dataManager.handleWeekTransition();
+
+                // Verify week bounds were updated
+                const newWeekStart = dataManager.state.weekStartDate;
+                const newWeekEnd = dataManager.state.weekEndDate;
+
+                // New week should be 7 days later
+                runner.expect(newWeekStart.getTime()).toBeGreaterThan(originalWeekStart.getTime());
+                runner.expect(newWeekEnd.getTime()).toBeGreaterThan(originalWeekEnd.getTime());
+            });
+        });
+
+        // Run tests when page loads
+        window.addEventListener('load', () => {
+            console.log('Running Weekly Data Archiving Tests...');
+        });
+    </script>
+</body>
+</html>

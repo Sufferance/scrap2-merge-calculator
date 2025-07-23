@@ -30,17 +30,17 @@ class ProgressCharts {
         if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
-        const history = this.app.services ? this.app.services.data.getWeeklyHistory() : (this.app.weeklyHistory || []);
+        const combinedData = this.app.services ? this.app.services.data.getCombinedWeeklyData() : [];
         
-        if (!history || history.length === 0) {
+        if (!combinedData || combinedData.length === 0) {
             this.showNoDataMessage(canvas, 'No weekly data available yet');
             return;
         }
 
-        const sortedHistory = history.sort((a, b) => new Date(a.weekStart) - new Date(b.weekStart));
-        const labels = sortedHistory.map(week => {
+        const labels = combinedData.map(week => {
             const date = new Date(week.weekStart);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return week.isCurrentWeek ? `${label} (Current)` : label;
         });
 
         const data = {
@@ -48,14 +48,24 @@ class ProgressCharts {
             datasets: [
                 {
                     label: 'Weekly Merges',
-                    data: sortedHistory.map(week => week.finalMerges),
-                    borderColor: 'rgb(75, 192, 192)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    data: combinedData.map(week => week.finalMerges),
+                    borderColor: combinedData.map(week => 
+                        week.isCurrentWeek ? 'rgb(255, 165, 0)' : 'rgb(75, 192, 192)'
+                    ),
+                    backgroundColor: combinedData.map(week => 
+                        week.isCurrentWeek ? 'rgba(255, 165, 0, 0.2)' : 'rgba(75, 192, 192, 0.2)'
+                    ),
+                    pointBackgroundColor: combinedData.map(week => 
+                        week.isCurrentWeek ? 'rgb(255, 165, 0)' : 'rgb(75, 192, 192)'
+                    ),
+                    pointBorderColor: combinedData.map(week => 
+                        week.isCurrentWeek ? 'rgb(255, 140, 0)' : 'rgb(53, 162, 235)'
+                    ),
                     tension: 0.1
                 },
                 {
                     label: 'Target Goal',
-                    data: sortedHistory.map(week => week.targetGoal),
+                    data: combinedData.map(week => week.targetGoal),
                     borderColor: 'rgb(255, 99, 132)',
                     backgroundColor: 'rgba(255, 99, 132, 0.2)',
                     borderDash: [5, 5],
@@ -80,7 +90,7 @@ class ProgressCharts {
                     },
                     x: {
                         title: {
-                            display: true,
+                            display: true,  
                             text: 'Week Starting'
                         }
                     }
@@ -93,6 +103,27 @@ class ProgressCharts {
                     legend: {
                         display: true,
                         position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: (tooltipItems) => {
+                                const index = tooltipItems[0].dataIndex;
+                                const weekData = combinedData[index];
+                                const tooltipData = this.app.services.data.getWeeklyTooltipData(weekData.weekId, weekData);
+                                return `${tooltipData.weekType}: ${tooltipData.dateRange}`;
+                            },
+                            label: (context) => {
+                                const index = context.dataIndex;
+                                const weekData = combinedData[index];
+                                const tooltipData = this.app.services.data.getWeeklyTooltipData(weekData.weekId, weekData);
+                                
+                                if (context.datasetIndex === 0) {
+                                    return `Merges: ${tooltipData.merges} (${tooltipData.status})`;
+                                } else {
+                                    return `Target: ${tooltipData.target}`;
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -278,23 +309,35 @@ class ProgressCharts {
             return;
         }
 
-        const history = this.app.services ? this.app.services.data.getWeeklyHistory() : (this.app.weeklyHistory || []);
+        const combinedData = this.app.services ? this.app.services.data.getCombinedWeeklyData() : [];
         
-        if (!history || history.length === 0) {
+        if (!combinedData || combinedData.length === 0) {
             this.charts.weeklyTrend.destroy();
             this.charts.weeklyTrend = null;
             return;
         }
 
-        const sortedHistory = history.sort((a, b) => new Date(a.weekStart) - new Date(b.weekStart));
-        const labels = sortedHistory.map(week => {
+        const labels = combinedData.map(week => {
             const date = new Date(week.weekStart);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return week.isCurrentWeek ? `${label} (Current)` : label;
         });
 
         this.charts.weeklyTrend.data.labels = labels;
-        this.charts.weeklyTrend.data.datasets[0].data = sortedHistory.map(week => week.finalMerges);
-        this.charts.weeklyTrend.data.datasets[1].data = sortedHistory.map(week => week.targetGoal);
+        this.charts.weeklyTrend.data.datasets[0].data = combinedData.map(week => week.finalMerges);
+        this.charts.weeklyTrend.data.datasets[0].borderColor = combinedData.map(week => 
+            week.isCurrentWeek ? 'rgb(255, 165, 0)' : 'rgb(75, 192, 192)'
+        );
+        this.charts.weeklyTrend.data.datasets[0].backgroundColor = combinedData.map(week => 
+            week.isCurrentWeek ? 'rgba(255, 165, 0, 0.2)' : 'rgba(75, 192, 192, 0.2)'
+        );
+        this.charts.weeklyTrend.data.datasets[0].pointBackgroundColor = combinedData.map(week => 
+            week.isCurrentWeek ? 'rgb(255, 165, 0)' : 'rgb(75, 192, 192)'
+        );
+        this.charts.weeklyTrend.data.datasets[0].pointBorderColor = combinedData.map(week => 
+            week.isCurrentWeek ? 'rgb(255, 140, 0)' : 'rgb(53, 162, 235)'
+        );
+        this.charts.weeklyTrend.data.datasets[1].data = combinedData.map(week => week.targetGoal);
         this.charts.weeklyTrend.update('none');
     }
 
@@ -325,32 +368,39 @@ class ProgressCharts {
             return;
         }
 
-        const history = this.app.services ? this.app.services.data.getWeeklyHistory() : (this.app.weeklyHistory || []);
+        const combinedData = this.app.services ? this.app.services.data.getCombinedWeeklyData() : [];
         
-        if (!history || history.length === 0) {
+        if (!combinedData || combinedData.length === 0) {
             this.charts.comparison.destroy();
             this.charts.comparison = null;
             return;
         }
 
         const weeks = 4;
-        const recentWeeks = history
+        const recentWeeks = combinedData
             .sort((a, b) => new Date(b.weekStart) - new Date(a.weekStart))
             .slice(0, weeks);
 
         const labels = recentWeeks.reverse().map(week => {
             const date = new Date(week.weekStart);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return week.isCurrentWeek ? `${label} (Current)` : label;
         });
 
         this.charts.comparison.data.labels = labels;
         this.charts.comparison.data.datasets[0].data = recentWeeks.map(week => week.achievementRate);
-        this.charts.comparison.data.datasets[0].backgroundColor = recentWeeks.map(week => 
-            week.completed ? 'rgba(75, 192, 192, 0.8)' : 'rgba(255, 99, 132, 0.8)'
-        );
-        this.charts.comparison.data.datasets[0].borderColor = recentWeeks.map(week => 
-            week.completed ? 'rgb(75, 192, 192)' : 'rgb(255, 99, 132)'
-        );
+        this.charts.comparison.data.datasets[0].backgroundColor = recentWeeks.map(week => {
+            if (week.isCurrentWeek) {
+                return week.completed ? 'rgba(255, 165, 0, 0.8)' : 'rgba(255, 140, 0, 0.8)';
+            }
+            return week.completed ? 'rgba(75, 192, 192, 0.8)' : 'rgba(255, 99, 132, 0.8)';
+        });
+        this.charts.comparison.data.datasets[0].borderColor = recentWeeks.map(week => {
+            if (week.isCurrentWeek) {
+                return week.completed ? 'rgb(255, 165, 0)' : 'rgb(255, 140, 0)';
+            }
+            return week.completed ? 'rgb(75, 192, 192)' : 'rgb(255, 99, 132)';
+        });
         this.charts.comparison.update('none');
     }
 
@@ -359,20 +409,21 @@ class ProgressCharts {
         if (!canvas) return;
 
         const ctx = canvas.getContext('2d');
-        const history = this.app.services ? this.app.services.data.getWeeklyHistory() : (this.app.weeklyHistory || []);
+        const combinedData = this.app.services ? this.app.services.data.getCombinedWeeklyData() : [];
         
-        if (!history || history.length === 0) {
+        if (!combinedData || combinedData.length === 0) {
             this.showNoDataMessage(canvas, 'No comparison data available yet');
             return;
         }
 
-        const recentWeeks = history
+        const recentWeeks = combinedData
             .sort((a, b) => new Date(b.weekStart) - new Date(a.weekStart))
             .slice(0, weeks);
 
         const labels = recentWeeks.reverse().map(week => {
             const date = new Date(week.weekStart);
-            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            return week.isCurrentWeek ? `${label} (Current)` : label;
         });
 
         const data = {
@@ -381,12 +432,18 @@ class ProgressCharts {
                 {
                     label: 'Achievement Rate (%)',
                     data: recentWeeks.map(week => week.achievementRate),
-                    backgroundColor: recentWeeks.map(week => 
-                        week.completed ? 'rgba(75, 192, 192, 0.8)' : 'rgba(255, 99, 132, 0.8)'
-                    ),
-                    borderColor: recentWeeks.map(week => 
-                        week.completed ? 'rgb(75, 192, 192)' : 'rgb(255, 99, 132)'
-                    ),
+                    backgroundColor: recentWeeks.map(week => {
+                        if (week.isCurrentWeek) {
+                            return week.completed ? 'rgba(255, 165, 0, 0.8)' : 'rgba(255, 140, 0, 0.8)';
+                        }
+                        return week.completed ? 'rgba(75, 192, 192, 0.8)' : 'rgba(255, 99, 132, 0.8)';
+                    }),
+                    borderColor: recentWeeks.map(week => {
+                        if (week.isCurrentWeek) {
+                            return week.completed ? 'rgb(255, 165, 0)' : 'rgb(255, 140, 0)';
+                        }
+                        return week.completed ? 'rgb(75, 192, 192)' : 'rgb(255, 99, 132)';
+                    }),
                     borderWidth: 1
                 }
             ]
@@ -417,7 +474,23 @@ class ProgressCharts {
                 plugins: {
                     title: {
                         display: true,
-                        text: `Recent ${weeks} Weeks Performance`
+                        text: `Recent ${weeks} Weeks Performance` 
+                    },
+                    tooltip: {
+                        callbacks: {
+                            title: (tooltipItems) => {
+                                const index = tooltipItems[0].dataIndex;
+                                const weekData = recentWeeks[index];
+                                const tooltipData = this.app.services.data.getWeeklyTooltipData(weekData.weekId, weekData);
+                                return `${tooltipData.weekType}: ${tooltipData.dateRange}`;
+                            },
+                            label: (context) => {
+                                const index = context.dataIndex;
+                                const weekData = recentWeeks[index];
+                                const tooltipData = this.app.services.data.getWeeklyTooltipData(weekData.weekId, weekData);
+                                return `Achievement: ${tooltipData.merges} / ${tooltipData.target} (${tooltipData.percentage}%)`;
+                            }
+                        }
                     }
                 }
             }
