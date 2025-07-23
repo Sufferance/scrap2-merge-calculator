@@ -5,7 +5,8 @@ class AppController {
             calculation: new CalculationService(),
             display: new DisplayManager(),
             data: new DataManager(window.StorageManager),
-            analytics: null
+            analytics: null,
+            streakDisplay: new StreakDisplayComponents()
         };
         
         this.countdownTimer = null;
@@ -33,6 +34,9 @@ class AppController {
             
             // Load and display data
             await this.loadAndDisplayData();
+            
+            // Initialize streak displays
+            await this.initializeStreakDisplays();
             
             this.isInitialized = true;
             console.log('ScrapCalculator initialized successfully');
@@ -73,9 +77,9 @@ class AppController {
         this.setupSyncListeners();
     }
 
-    handleMergeInput(e) {
+    async handleMergeInput(e) {
         const newValue = parseInt(e.target.value) || 0;
-        const increment = this.services.data.setCurrentMerges(newValue);
+        const increment = await this.services.data.setCurrentMerges(newValue);
         
         // Show increment if there was one
         if (increment > 0) {
@@ -114,7 +118,7 @@ class AppController {
         
         try {
             // Force set the merge count to match input value
-            this.services.data.forceSetCurrentMerges(inputValue);
+            await this.services.data.forceSetCurrentMerges(inputValue);
             
             // Save the updated state
             await this.services.data.saveCurrentProgress();
@@ -155,15 +159,15 @@ class AppController {
             isScrolling = false;
         });
 
-        mergeInput.addEventListener('touchmove', (e) => {
+        mergeInput.addEventListener('touchmove', async (e) => {
             if (!isScrolling) {
                 const deltaY = e.touches[0].clientY - startY;
                 if (Math.abs(deltaY) > 10) {
                     isScrolling = true;
                     if (deltaY > 0) {
-                        this.services.data.addMerges(100);
+                        await this.services.data.addMerges(100);
                     } else {
-                        this.services.data.addMerges(-100);
+                        await this.services.data.addMerges(-100);
                     }
                     
                     // Update input display
@@ -392,6 +396,7 @@ class AppController {
         this.updateCalculations();
         this.saveData();
         this.updateCharts();
+        this.updateStreakDisplays();
     }
 
     updateCalculations() {
@@ -541,6 +546,100 @@ class AppController {
 
     getServices() {
         return this.services;
+    }
+
+    // Streak Display Integration Methods
+    async initializeStreakDisplays() {
+        try {
+            // Create streak badge in the main interface
+            const headerSection = document.querySelector('.progress-display') || 
+                                 document.querySelector('.header-section') ||
+                                 document.querySelector('#current-progress');
+            
+            if (headerSection) {
+                // Load current streak data
+                const streakSummary = await this.services.data.getStreakSummary();
+                const currentStreak = streakSummary ? streakSummary.currentStreak : 0;
+                
+                // Create the streak badge
+                this.services.streakDisplay.createCurrentStreakBadge(headerSection, currentStreak);
+            }
+
+            // Create streak metrics card in analytics section
+            const analyticsSection = document.querySelector('.analytics-section') || 
+                                   document.querySelector('#analytics-section') ||
+                                   document.querySelector('.metrics-container');
+            
+            if (analyticsSection) {
+                const streakSummary = await this.services.data.getStreakSummary();
+                const defaultStreakData = {
+                    currentStreak: 0,
+                    longestStreak: 0,
+                    totalDaysAchieved: 0
+                };
+                
+                const streakData = streakSummary || defaultStreakData;
+                this.services.streakDisplay.createStreakMetricsCard(analyticsSection, streakData);
+            }
+
+            console.log('Streak displays initialized successfully');
+        } catch (error) {
+            console.error('Error initializing streak displays:', error);
+        }
+    }
+
+    async updateStreakDisplays() {
+        try {
+            // Load latest streak data
+            const streakSummary = await this.services.data.getStreakSummary();
+            
+            if (streakSummary) {
+                // Update streak badge
+                this.services.streakDisplay.updateStreakBadge(streakSummary.currentStreak);
+                
+                // Update streak metrics card
+                this.services.streakDisplay.updateStreakMetrics(streakSummary);
+                
+                // Check for milestone celebrations
+                this.checkStreakMilestones(streakSummary.currentStreak);
+            }
+        } catch (error) {
+            console.error('Error updating streak displays:', error);
+        }
+    }
+
+    checkStreakMilestones(currentStreak) {
+        // Check for milestone achievements (7, 14, 30, etc.)
+        const milestones = [7, 14, 30, 50, 100];
+        
+        if (milestones.includes(currentStreak)) {
+            this.showMilestoneNotification(currentStreak);
+        }
+    }
+
+    showMilestoneNotification(streakLength) {
+        // Create a temporary notification for streak milestones
+        const notification = document.createElement('div');
+        notification.className = 'streak-milestone-notification';
+        notification.innerHTML = `
+            <div class="milestone-icon">🎉</div>
+            <div class="milestone-text">
+                <div class="milestone-title">${streakLength} Day Streak!</div>
+                <div class="milestone-message">Amazing consistency! Keep it up!</div>
+            </div>
+        `;
+        
+        // Add to body
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => notification.classList.add('show'), 100);
+        
+        // Remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.remove('show');
+            setTimeout(() => document.body.removeChild(notification), 300);
+        }, 5000);
     }
 }
 

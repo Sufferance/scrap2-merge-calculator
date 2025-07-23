@@ -185,9 +185,9 @@ class DataManager {
     }
 
     // Force set merge count to match input (allows decreases)
-    forceSetCurrentMerges(value) {
+    async forceSetCurrentMerges(value) {
         this.state.currentMerges = Math.max(0, parseInt(value) || 0);
-        this.updateCurrentDayTotal();
+        await this.updateCurrentDayTotal();
     }
 
     async resetStateToCurrentMerges() {
@@ -214,7 +214,7 @@ class DataManager {
             this.updateWeekBounds();
             
             // Reset daily history to current state
-            this.updateCurrentDayTotal();
+            await this.updateCurrentDayTotal();
             
             // Save the reset state
             await this.saveCurrentProgress();
@@ -386,13 +386,13 @@ class DataManager {
     }
 
     // State setters
-    setCurrentMerges(value) {
+    async setCurrentMerges(value) {
         const newValue = Math.max(0, parseInt(value) || 0);
         const increment = newValue - this.state.currentMerges;
         
         if (newValue > this.state.currentMerges) {
             this.state.currentMerges = newValue;
-            this.updateCurrentDayTotal();
+            await this.updateCurrentDayTotal();
             return increment;
         }
         return 0;
@@ -406,12 +406,12 @@ class DataManager {
         this.state.targetGoal = Math.max(1, parseInt(value) || 50000);
     }
 
-    addMerges(amount) {
+    async addMerges(amount) {
         this.state.currentMerges = Math.max(0, this.state.currentMerges + amount);
-        this.updateCurrentDayTotal();
+        await this.updateCurrentDayTotal();
     }
 
-    updateCurrentDayTotal() {
+    async updateCurrentDayTotal() {
         const currentDayResult = this.calculationService.calculateCurrentDayTotal(
             this.state.currentMerges,
             this.state.weekStartDate,
@@ -427,7 +427,107 @@ class DataManager {
         if (existingTotal === undefined || this.state.currentMerges !== existingTotal) {
             // Store cumulative total instead of daily increment
             this.state.dailyHistory[currentDayResult.weekId][currentDayResult.today] = this.state.currentMerges;
+            
+            // Trigger streak calculation for the current day
+            await this.updateDailyProgressWithStreak(
+                currentDayResult.today,
+                this.state.currentMerges,
+                this.state.targetGoal
+            );
         }
+    }
+
+    async updateDailyProgressWithStreak(dateStr, merges, goalTarget) {
+        // Calculate daily target and achievement status
+        const dailyTarget = Math.ceil(goalTarget / 7);
+        const achievedTarget = merges >= dailyTarget;
+
+        // Create enhanced daily progress object with streak fields
+        const dailyData = {
+            id: dateStr,
+            date: dateStr,
+            merges: merges,
+            goalTarget: goalTarget,
+            dailyTarget: dailyTarget,
+            achievedTarget: achievedTarget,
+            lastUpdated: Date.now()
+        };
+
+        // Update the daily history with the new structure
+        const weekId = this.calculationService.getWeekId(new Date(dateStr));
+        if (!this.state.dailyHistory[weekId]) {
+            this.state.dailyHistory[weekId] = {};
+        }
+        
+        // Store both the cumulative total (for backward compatibility) and the enhanced data
+        this.state.dailyHistory[weekId][dateStr] = {
+            mergeTotal: merges, // Backward compatibility
+            ...dailyData       // Enhanced structure
+        };
+
+        // Save updated state
+        await this.saveCurrentProgress();
+
+        // Recalculate and update streak summary if StreakCalculator is available
+        if (window.StreakCalculator) {
+            const allDailyProgress = this.getAllDailyProgressForStreaks();
+            const calculator = new StreakCalculator();
+            const newStreakSummary = calculator.calculateStreaks(allDailyProgress);
+            
+            // Save streak summary to database
+            if (this.storage.saveStreakSummary) {
+                await this.storage.saveStreakSummary({
+                    ...newStreakSummary,
+                    lastCalculated: Date.now()
+                });
+            }
+        }
+
+        return dailyData;
+    }
+
+    getAllDailyProgressForStreaks() {
+        const allDailyProgress = [];
+        
+        // Convert the nested dailyHistory structure to flat array for streak calculation
+        for (const weekId in this.state.dailyHistory) {
+            for (const dateStr in this.state.dailyHistory[weekId]) {
+                const dayData = this.state.dailyHistory[weekId][dateStr];
+                
+                // Handle both old format (number) and new format (object)
+                if (typeof dayData === 'number') {
+                    // Legacy format - convert to new structure
+                    const dailyTarget = Math.ceil(this.state.targetGoal / 7);
+                    allDailyProgress.push({
+                        date: dateStr,
+                        merges: dayData,
+                        goalTarget: this.state.targetGoal,
+                        dailyTarget: dailyTarget,
+                        achievedTarget: dayData >= dailyTarget
+                    });
+                } else if (dayData && typeof dayData === 'object') {
+                    // New enhanced format
+                    allDailyProgress.push({
+                        date: dateStr,
+                        merges: dayData.merges || dayData.mergeTotal || 0,
+                        goalTarget: dayData.goalTarget || this.state.targetGoal,
+                        dailyTarget: dayData.dailyTarget || Math.ceil((dayData.goalTarget || this.state.targetGoal) / 7),
+                        achievedTarget: dayData.achievedTarget !== undefined ? dayData.achievedTarget : 
+                                       (dayData.merges || dayData.mergeTotal || 0) >= (dayData.dailyTarget || Math.ceil((dayData.goalTarget || this.state.targetGoal) / 7))
+                    });
+                }
+            }
+        }
+        
+        // Sort by date to ensure proper streak calculation
+        return allDailyProgress.sort((a, b) => new Date(a.date) - new Date(b.date));
+    }
+
+    async getStreakSummary() {
+        if (this.storage.loadStreakSummary) {
+            return await this.storage.loadStreakSummary();
+        }
+        return null;
     }
 
     async saveCurrentWeekToHistory() {

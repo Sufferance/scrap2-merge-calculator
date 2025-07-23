@@ -149,15 +149,42 @@ class ProgressCharts {
             return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
         });
 
+        // Calculate achievement indicators for each day
+        const targetGoal = this.app.services ? this.app.services.data.state.targetGoal : 50000;
+        const achievementData = dailyProgress.map(day => {
+            const dailyTarget = Math.ceil(targetGoal / 7);
+            return day.merges >= dailyTarget ? day.merges : null;
+        });
+
         const data = {
             labels: labels,
             datasets: [
                 {
                     label: 'Daily Merges',
                     data: dailyProgress.map(day => day.merges),
-                    backgroundColor: 'rgba(54, 162, 235, 0.8)',
-                    borderColor: 'rgb(54, 162, 235)',
+                    backgroundColor: dailyProgress.map(day => {
+                        const dailyTarget = Math.ceil(targetGoal / 7);
+                        const achieved = day.merges >= dailyTarget;
+                        return achieved ? 'rgba(102, 187, 106, 0.8)' : 'rgba(54, 162, 235, 0.8)';
+                    }),
+                    borderColor: dailyProgress.map(day => {
+                        const dailyTarget = Math.ceil(targetGoal / 7);
+                        const achieved = day.merges >= dailyTarget;
+                        return achieved ? 'rgb(102, 187, 106)' : 'rgb(54, 162, 235)';
+                    }),
                     borderWidth: 1
+                },
+                {
+                    label: 'Daily Target',
+                    data: dailyProgress.map(() => Math.ceil(targetGoal / 7)),
+                    type: 'line',
+                    backgroundColor: 'rgba(255, 167, 38, 0.1)',
+                    borderColor: 'rgb(255, 167, 38)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    pointRadius: 0,
+                    pointHoverRadius: 0,
+                    fill: false
                 }
             ]
         };
@@ -196,6 +223,42 @@ class ProgressCharts {
                     title: {
                         display: true,
                         text: 'Daily Progress (Current Week)'
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        intersect: false,
+                        callbacks: {
+                            title: function(tooltipItems) {
+                                return tooltipItems[0].label;
+                            },
+                            afterBody: function(tooltipItems) {
+                                const dataIndex = tooltipItems[0].dataIndex;
+                                const dayData = dailyProgress[dataIndex];
+                                const dailyTarget = Math.ceil(targetGoal / 7);
+                                const achieved = dayData.merges >= dailyTarget;
+                                
+                                return [
+                                    `Daily Target: ${dailyTarget.toLocaleString()}`,
+                                    `Status: ${achieved ? '✅ Target Achieved' : '⭕ Below Target'}`,
+                                    achieved ? `Contributes to streak` : `Breaks streak`
+                                ];
+                            },
+                            labelColor: function(context) {
+                                const dataIndex = context.dataIndex;
+                                const dayData = dailyProgress[dataIndex];
+                                const dailyTarget = Math.ceil(targetGoal / 7);
+                                const achieved = dayData.merges >= dailyTarget;
+                                
+                                return {
+                                    backgroundColor: achieved ? 'rgb(102, 187, 106)' : 'rgb(54, 162, 235)',
+                                    borderColor: achieved ? 'rgb(102, 187, 106)' : 'rgb(54, 162, 235)'
+                                };
+                            }
+                        }
                     }
                 }
             }
@@ -298,8 +361,27 @@ class ProgressCharts {
             return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
         });
 
+        // Update achievement indicators
+        const targetGoal = this.app.services ? this.app.services.data.state.targetGoal : 50000;
+        
         this.charts.dailyProgress.data.labels = labels;
         this.charts.dailyProgress.data.datasets[0].data = dailyProgress.map(day => day.merges);
+        this.charts.dailyProgress.data.datasets[0].backgroundColor = dailyProgress.map(day => {
+            const dailyTarget = Math.ceil(targetGoal / 7);
+            const achieved = day.merges >= dailyTarget;
+            return achieved ? 'rgba(102, 187, 106, 0.8)' : 'rgba(54, 162, 235, 0.8)';
+        });
+        this.charts.dailyProgress.data.datasets[0].borderColor = dailyProgress.map(day => {
+            const dailyTarget = Math.ceil(targetGoal / 7);
+            const achieved = day.merges >= dailyTarget;
+            return achieved ? 'rgb(102, 187, 106)' : 'rgb(54, 162, 235)';
+        });
+        
+        // Update daily target line
+        if (this.charts.dailyProgress.data.datasets[1]) {
+            this.charts.dailyProgress.data.datasets[1].data = dailyProgress.map(() => Math.ceil(targetGoal / 7));
+        }
+        
         this.charts.dailyProgress.update('none');
     }
 

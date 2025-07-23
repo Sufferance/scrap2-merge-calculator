@@ -2,7 +2,7 @@
 class StorageManager {
     constructor() {
         this.dbName = 'ScrapCalculatorDB';
-        this.dbVersion = 1;
+        this.dbVersion = 3;
         this.db = null;
         this.isInitialized = false;
     }
@@ -27,12 +27,22 @@ class StorageManager {
 
             request.onupgradeneeded = (event) => {
                 this.db = event.target.result;
-                this.createObjectStores();
+                this.handleDatabaseUpgrade(event.oldVersion);
             };
         });
     }
 
-    createObjectStores() {
+    handleDatabaseUpgrade(oldVersion) {
+        // Handle incremental database upgrades
+        if (oldVersion < 1) {
+            this.createInitialObjectStores();
+        }
+        if (oldVersion < 3) {
+            this.createStreakObjectStore();
+        }
+    }
+
+    createInitialObjectStores() {
         // Current progress store
         if (!this.db.objectStoreNames.contains('currentProgress')) {
             const currentProgressStore = this.db.createObjectStore('currentProgress', { keyPath: 'id' });
@@ -49,6 +59,14 @@ class StorageManager {
             const historyStore = this.db.createObjectStore('weeklyHistory', { keyPath: 'weekId' });
             historyStore.createIndex('weekStart', 'weekStart', { unique: false });
             historyStore.createIndex('completed', 'completed', { unique: false });
+        }
+    }
+
+    createStreakObjectStore() {
+        // Streak summary store (added in version 3)
+        if (!this.db.objectStoreNames.contains('streakSummary')) {
+            const streakStore = this.db.createObjectStore('streakSummary', { keyPath: 'id' });
+            console.log('Created streakSummary object store');
         }
     }
 
@@ -148,7 +166,11 @@ class StorageManager {
         if (!this.isInitialized) await this.initialize();
 
         return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['currentProgress', 'settings', 'weeklyHistory'], 'readwrite');
+            const storeNames = ['currentProgress', 'settings', 'weeklyHistory'];
+            if (this.db.objectStoreNames.contains('streakSummary')) {
+                storeNames.push('streakSummary');
+            }
+            const transaction = this.db.transaction(storeNames, 'readwrite');
             
             const currentProgressStore = transaction.objectStore('currentProgress');
             const settingsStore = transaction.objectStore('settings');
@@ -160,6 +182,11 @@ class StorageManager {
                 historyStore.clear()
             ];
             
+            if (this.db.objectStoreNames.contains('streakSummary')) {
+                const streakStore = transaction.objectStore('streakSummary');
+                clearPromises.push(streakStore.clear());
+            }
+            
             transaction.oncomplete = () => resolve();
             transaction.onerror = () => reject(transaction.error);
         });
@@ -170,12 +197,18 @@ class StorageManager {
 
         const currentProgress = await this.loadCurrentProgress();
         const weeklyHistory = await this.loadWeeklyHistory();
+        let streakSummary = null;
+        
+        if (this.db.objectStoreNames.contains('streakSummary')) {
+            streakSummary = await this.loadStreakSummary();
+        }
         
         return {
             currentProgress,
             weeklyHistory,
+            streakSummary,
             exportedAt: new Date().toISOString(),
-            version: 1
+            version: 3
         };
     }
 
@@ -191,6 +224,43 @@ class StorageManager {
                 await this.saveWeeklyHistory(weekData);
             }
         }
+        
+        if (data.streakSummary && this.db.objectStoreNames.contains('streakSummary')) {
+            await this.saveStreakSummary(data.streakSummary);
+        }
+    }
+
+    async saveStreakSummary(streakData) {
+        if (!this.isInitialized) await this.initialize();
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['streakSummary'], 'readwrite');
+            const store = transaction.objectStore('streakSummary');
+            
+            const data = {
+                id: 'current',
+                ...streakData,
+                lastUpdated: new Date().toISOString()
+            };
+
+            const request = store.put(data);
+            
+            request.onsuccess = () => resolve();
+            request.onerror = () => reject(request.error);
+        });
+    }
+
+    async loadStreakSummary() {
+        if (!this.isInitialized) await this.initialize();
+
+        return new Promise((resolve, reject) => {
+            const transaction = this.db.transaction(['streakSummary'], 'readonly');
+            const store = transaction.objectStore('streakSummary');
+            const request = store.get('current');
+            
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+        });
     }
 }
 
