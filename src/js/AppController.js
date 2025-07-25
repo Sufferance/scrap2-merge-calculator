@@ -10,18 +10,6 @@ class AppController {
         
         this.countdownTimer = null;
         this.isInitialized = false;
-        // Race condition prevention
-        this.updateInProgress = false;
-        this.pendingUpdates = new Set();
-        
-        // Enhanced UI state management
-        this.uiUpdateQueue = [];
-        this.processingUIQueue = false;
-        this.loadingStates = new Map();
-        this.errorStates = new Map();
-        
-        // Debounce timers
-        this.inputDebounceTimers = new Map();
         
         this.initialize();
     }
@@ -55,13 +43,9 @@ class AppController {
 
     setupEventListeners() {
         // Input field listeners
-        const currentMergesElement = this.services.display.elements.currentMerges;
-        
-        if (currentMergesElement) {
-            currentMergesElement.addEventListener('input', (e) => {
-                this.handleMergeInput(e);
-            });
-        }
+        this.services.display.elements.currentMerges?.addEventListener('input', (e) => {
+            this.handleMergeInput(e);
+        });
 
         this.services.display.elements.mergeRate?.addEventListener('input', (e) => {
             this.handleRateInput(e);
@@ -89,64 +73,28 @@ class AppController {
         this.setupSyncListeners();
     }
 
-    async handleMergeInput(e) {
-        const inputId = 'merge';
+    handleMergeInput(e) {
+        const newValue = parseInt(e.target.value) || 0;
+        const increment = this.services.data.setCurrentMerges(newValue);
         
-        // Clear existing debounce timer
-        if (this.inputDebounceTimers.has(inputId)) {
-            clearTimeout(this.inputDebounceTimers.get(inputId));
+        // Show increment if there was one
+        if (increment > 0) {
+            this.showMergeIncrement(increment);
         }
         
-        // Debounce rapid input changes
-        this.inputDebounceTimers.set(inputId, setTimeout(async () => {
-            await this.processInputChange(inputId, e, async () => {
-                const newValue = parseInt(e.target.value) || 0;
-                const increment = await this.services.data.setCurrentMerges(newValue);
-                
-                // Show increment if there was one
-                if (increment > 0) {
-                    this.showMergeIncrement(increment);
-                }
-                
-                return { success: true, increment };
-            });
-        }, 150)); // 150ms debounce for better responsiveness
+        this.updateCalculationsAndSave();
     }
 
-    async handleRateInput(e) {
-        const inputId = 'rate';
-        
-        // Clear existing debounce timer
-        if (this.inputDebounceTimers.has(inputId)) {
-            clearTimeout(this.inputDebounceTimers.get(inputId));
-        }
-        
-        // Debounce rapid input changes
-        this.inputDebounceTimers.set(inputId, setTimeout(async () => {
-            await this.processInputChange(inputId, e, async () => {
-                const newValue = parseFloat(e.target.value) || 0;
-                this.services.data.setMergeRatePer10Min(newValue);
-                return { success: true };
-            });
-        }, 300)); // Longer debounce for rate changes
+    handleRateInput(e) {
+        const newValue = parseFloat(e.target.value) || 0;
+        this.services.data.setMergeRatePer10Min(newValue);
+        this.updateCalculationsAndSave();
     }
 
-    async handleTargetInput(e) {
-        const inputId = 'target';
-        
-        // Clear existing debounce timer
-        if (this.inputDebounceTimers.has(inputId)) {
-            clearTimeout(this.inputDebounceTimers.get(inputId));
-        }
-        
-        // Debounce rapid input changes
-        this.inputDebounceTimers.set(inputId, setTimeout(async () => {
-            await this.processInputChange(inputId, e, async () => {
-                const newValue = parseInt(e.target.value) || 50000;
-                this.services.data.setTargetGoal(newValue);
-                return { success: true };
-            });
-        }, 300)); // Longer debounce for target changes
+    handleTargetInput(e) {
+        const newValue = parseInt(e.target.value) || 50000;
+        this.services.data.setTargetGoal(newValue);
+        this.updateCalculationsAndSave();
     }
 
     async handleResetState() {
@@ -166,13 +114,13 @@ class AppController {
         
         try {
             // Force set the merge count to match input value
-            await this.services.data.forceSetCurrentMerges(inputValue);
+            this.services.data.forceSetCurrentMerges(inputValue);
             
             // Save the updated state
             await this.services.data.saveCurrentProgress();
             
             // Update the UI to reflect the changes
-            await this.updateCalculationsAndSave();
+            this.updateCalculationsAndSave();
             
             alert('Merge count successfully synced!');
         } catch (error) {
@@ -193,112 +141,6 @@ class AppController {
             incrementDisplay.classList.remove('show');
         }, 3000);
     }
-    
-    // Enhanced input processing with loading states and error handling
-    async processInputChange(inputId, event, processingFunction) {
-        // Prevent concurrent processing of the same input
-        if (this.updateInProgress) {
-            this.pendingUpdates.add(inputId);
-            return;
-        }
-        
-        this.updateInProgress = true;
-        this.setLoadingState(inputId, true);
-        this.clearErrorState(inputId);
-        
-        try {
-            // Execute the input-specific processing
-            const result = await processingFunction();
-            
-            if (result && result.success) {
-                // Update calculations and save
-                await this.updateCalculationsAndSave();
-                
-                // Show success feedback if provided
-                if (result.feedback) {
-                    this.showInputFeedback(inputId, result.feedback, 'success');
-                }
-            }
-            
-            // Process any pending updates for this input
-            if (this.pendingUpdates.has(inputId)) {
-                this.pendingUpdates.delete(inputId);
-                // Schedule re-processing with current value
-                setTimeout(() => {
-                    event.target.dispatchEvent(new Event('input'));
-                }, 100);
-            }
-            
-        } catch (error) {
-            console.error(`Error processing ${inputId} input:`, error);
-            this.setErrorState(inputId, error.message);
-            this.showInputFeedback(inputId, 'Error updating value', 'error');
-            
-        } finally {
-            this.setLoadingState(inputId, false);
-            this.updateInProgress = false;
-        }
-    }
-    
-    // UI state management methods
-    setLoadingState(componentId, isLoading) {
-        this.loadingStates.set(componentId, isLoading);
-        
-        // Visual feedback for loading state
-        const element = this.getInputElement(componentId);
-        if (element) {
-            if (isLoading) {
-                element.classList.add('loading');
-                element.disabled = true;
-            } else {
-                element.classList.remove('loading');
-                element.disabled = false;
-            }
-        }
-    }
-    
-    setErrorState(componentId, errorMessage) {
-        this.errorStates.set(componentId, errorMessage);
-        
-        // Visual feedback for error state
-        const element = this.getInputElement(componentId);
-        if (element) {
-            element.classList.add('error');
-            setTimeout(() => {
-                element.classList.remove('error');
-            }, 3000);
-        }
-    }
-    
-    clearErrorState(componentId) {
-        this.errorStates.delete(componentId);
-        
-        const element = this.getInputElement(componentId);
-        if (element) {
-            element.classList.remove('error');
-        }
-    }
-    
-    getInputElement(inputId) {
-        switch (inputId) {
-            case 'merge':
-                return this.services.display.elements.currentMerges;
-            case 'rate':
-                return this.services.display.elements.mergeRate;
-            case 'target':
-                return this.services.display.elements.targetGoal;
-            default:
-                return null;
-        }
-    }
-    
-    showInputFeedback(inputId, message, type = 'info') {
-        // Simple feedback system - can be enhanced with toast notifications
-        console.log(`${type.toUpperCase()}: ${inputId} - ${message}`);
-        
-        // You could add visual feedback here, like a tooltip or toast
-        // For now, we rely on CSS classes and console logging
-    }
 
 
     setupTouchGestures() {
@@ -313,22 +155,22 @@ class AppController {
             isScrolling = false;
         });
 
-        mergeInput.addEventListener('touchmove', async (e) => {
+        mergeInput.addEventListener('touchmove', (e) => {
             if (!isScrolling) {
                 const deltaY = e.touches[0].clientY - startY;
                 if (Math.abs(deltaY) > 10) {
                     isScrolling = true;
                     if (deltaY > 0) {
-                        await this.services.data.addMerges(100);
+                        this.services.data.addMerges(100);
                     } else {
-                        await this.services.data.addMerges(-100);
+                        this.services.data.addMerges(-100);
                     }
                     
                     // Update input display
                     mergeInput.value = this.services.data.getCurrentMerges();
                     this.services.display.addPulseEffect(mergeInput);
                     
-                    await this.updateCalculationsAndSave();
+                    this.updateCalculationsAndSave();
                 }
             }
         });
@@ -546,55 +388,10 @@ class AppController {
         }
     }
 
-    async updateCalculationsAndSave() {
-        // Add this operation to the UI update queue
-        return new Promise((resolve, reject) => {
-            this.uiUpdateQueue.push(async () => {
-                try {
-                    // Update calculations (synchronous)
-                    this.updateCalculations();
-                    
-                    // Save data and wait for completion
-                    await this.saveData();
-                    
-                    // Update displays
-                    this.updateCharts();
-                    
-                    resolve();
-                    
-                } catch (error) {
-                    console.error('Error in updateCalculationsAndSave:', error);
-                    // Don't throw - ensure UI remains responsive
-                    resolve(); // Resolve anyway to prevent blocking
-                }
-            });
-            
-            // Process the queue if not already processing
-            this.processUIUpdateQueue();
-        });
-    }
-    
-    // Process UI updates sequentially to prevent race conditions
-    async processUIUpdateQueue() {
-        if (this.processingUIQueue) {
-            return; // Already processing
-        }
-        
-        this.processingUIQueue = true;
-        
-        try {
-            while (this.uiUpdateQueue.length > 0) {
-                const updateFunction = this.uiUpdateQueue.shift();
-                try {
-                    await updateFunction();
-                } catch (error) {
-                    console.error('Error processing UI update:', error);
-                    // Continue processing other updates
-                }
-            }
-        } finally {
-            this.processingUIQueue = false;
-        }
+    updateCalculationsAndSave() {
+        this.updateCalculations();
+        this.saveData();
+        this.updateCharts();
     }
 
     updateCalculations() {
@@ -657,7 +454,6 @@ class AppController {
             await this.services.data.saveCurrentProgress();
         } catch (error) {
             console.error('Error saving data:', error);
-            throw error; // Re-throw to let caller handle
         }
     }
 
@@ -746,7 +542,6 @@ class AppController {
     getServices() {
         return this.services;
     }
-
 }
 
 // Export for use in other modules

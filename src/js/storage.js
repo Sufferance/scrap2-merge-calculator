@@ -2,7 +2,7 @@
 class StorageManager {
     constructor() {
         this.dbName = 'ScrapCalculatorDB';
-        this.dbVersion = 3;
+        this.dbVersion = 1;
         this.db = null;
         this.isInitialized = false;
     }
@@ -21,24 +21,18 @@ class StorageManager {
             request.onsuccess = () => {
                 this.db = request.result;
                 this.isInitialized = true;
+                console.log('Database opened successfully');
                 resolve();
             };
 
             request.onupgradeneeded = (event) => {
                 this.db = event.target.result;
-                this.handleDatabaseUpgrade(event.oldVersion);
+                this.createObjectStores();
             };
         });
     }
 
-    handleDatabaseUpgrade(oldVersion) {
-        // Handle incremental database upgrades
-        if (oldVersion < 1) {
-            this.createInitialObjectStores();
-        }
-    }
-
-    createInitialObjectStores() {
+    createObjectStores() {
         // Current progress store
         if (!this.db.objectStoreNames.contains('currentProgress')) {
             const currentProgressStore = this.db.createObjectStore('currentProgress', { keyPath: 'id' });
@@ -57,7 +51,6 @@ class StorageManager {
             historyStore.createIndex('completed', 'completed', { unique: false });
         }
     }
-
 
     async saveCurrentProgress(progressData) {
         if (!this.isInitialized) await this.initialize();
@@ -155,8 +148,7 @@ class StorageManager {
         if (!this.isInitialized) await this.initialize();
 
         return new Promise((resolve, reject) => {
-            const storeNames = ['currentProgress', 'settings', 'weeklyHistory'];
-            const transaction = this.db.transaction(storeNames, 'readwrite');
+            const transaction = this.db.transaction(['currentProgress', 'settings', 'weeklyHistory'], 'readwrite');
             
             const currentProgressStore = transaction.objectStore('currentProgress');
             const settingsStore = transaction.objectStore('settings');
@@ -167,7 +159,6 @@ class StorageManager {
                 settingsStore.clear(),
                 historyStore.clear()
             ];
-            
             
             transaction.oncomplete = () => resolve();
             transaction.onerror = () => reject(transaction.error);
@@ -184,7 +175,7 @@ class StorageManager {
             currentProgress,
             weeklyHistory,
             exportedAt: new Date().toISOString(),
-            version: 3
+            version: 1
         };
     }
 
@@ -200,9 +191,7 @@ class StorageManager {
                 await this.saveWeeklyHistory(weekData);
             }
         }
-        
     }
-
 }
 
 // Export for use in main app

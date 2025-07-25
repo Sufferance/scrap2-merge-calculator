@@ -159,6 +159,15 @@ class AnalyticsService {
             });
         }
 
+        // Streak recommendations
+        if (stats.streak > 0) {
+            recommendations.push({
+                type: 'maintain_streak',
+                priority: 'medium',
+                message: `Great job! You're on a ${stats.streak}-week streak`,
+                action: 'Keep the momentum going'
+            });
+        }
 
         return recommendations;
     }

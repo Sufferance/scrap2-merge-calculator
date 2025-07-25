@@ -233,17 +233,12 @@ class DisplayManager {
             const weekEnd = new Date(week.weekEnd);
             const dateRange = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
             
-            // Calculate achievementRate if missing (for backward compatibility)
-            const achievementRate = week.achievementRate !== undefined 
-                ? week.achievementRate 
-                : (week.finalMerges / week.targetGoal) * 100;
-            
             return `
                 <div class="history-item ${week.completed ? 'completed' : 'incomplete'}">
                     <div class="history-date">${dateRange}</div>
                     <div class="history-stats">
                         <span class="merges">${week.finalMerges.toLocaleString()} / ${week.targetGoal.toLocaleString()}</span>
-                        <span class="rate">${achievementRate.toFixed(1)}%</span>
+                        <span class="rate">${week.achievementRate.toFixed(1)}%</span>
                     </div>
                     <div class="history-status ${week.completed ? 'completed' : 'incomplete'}">
                         ${week.completed ? '✓ Completed' : '✗ Incomplete'}
@@ -270,6 +265,11 @@ class DisplayManager {
                     <div class="stat-label">Rate Consistency</div>
                 </div>
                 
+                <div class="analytics-card">
+                    <h4>Streak</h4>
+                    <div class="stat-value">${analytics.streak}</div>
+                    <div class="stat-label">Week${analytics.streak !== 1 ? 's' : ''}</div>
+                </div>
                 
                 <div class="analytics-card">
                     <h4>Completion Rate</h4>

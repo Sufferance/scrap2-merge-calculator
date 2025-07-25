@@ -19,9 +19,11 @@ self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then((cache) => {
+                console.log('Service Worker: Cache opened');
                 return cache.addAll(urlsToCache);
             })
             .then(() => {
+                console.log('Service Worker: All resources cached');
                 return self.skipWaiting();
             })
     );
@@ -34,11 +36,13 @@ self.addEventListener('activate', (event) => {
             return Promise.all(
                 cacheNames.map((cacheName) => {
                     if (cacheName !== CACHE_NAME) {
+                        console.log('Service Worker: Deleting old cache:', cacheName);
                         return caches.delete(cacheName);
                     }
                 })
             );
         }).then(() => {
+            console.log('Service Worker: Activated');
             return self.clients.claim();
         })
     );
