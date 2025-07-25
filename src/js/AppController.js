@@ -5,12 +5,23 @@ class AppController {
             calculation: new CalculationService(),
             display: new DisplayManager(),
             data: new DataManager(window.StorageManager),
-            analytics: null,
-            streakDisplay: new StreakDisplayComponents()
+            analytics: null
         };
         
         this.countdownTimer = null;
         this.isInitialized = false;
+        // Race condition prevention
+        this.updateInProgress = false;
+        this.pendingUpdates = new Set();
+        
+        // Enhanced UI state management
+        this.uiUpdateQueue = [];
+        this.processingUIQueue = false;
+        this.loadingStates = new Map();
+        this.errorStates = new Map();
+        
+        // Debounce timers
+        this.inputDebounceTimers = new Map();
         
         this.initialize();
     }
@@ -35,9 +46,6 @@ class AppController {
             // Load and display data
             await this.loadAndDisplayData();
             
-            // Initialize streak displays
-            await this.initializeStreakDisplays();
-            
             this.isInitialized = true;
             console.log('ScrapCalculator initialized successfully');
         } catch (error) {
@@ -47,9 +55,13 @@ class AppController {
 
     setupEventListeners() {
         // Input field listeners
-        this.services.display.elements.currentMerges?.addEventListener('input', (e) => {
-            this.handleMergeInput(e);
-        });
+        const currentMergesElement = this.services.display.elements.currentMerges;
+        
+        if (currentMergesElement) {
+            currentMergesElement.addEventListener('input', (e) => {
+                this.handleMergeInput(e);
+            });
+        }
 
         this.services.display.elements.mergeRate?.addEventListener('input', (e) => {
             this.handleRateInput(e);
@@ -78,27 +90,63 @@ class AppController {
     }
 
     async handleMergeInput(e) {
-        const newValue = parseInt(e.target.value) || 0;
-        const increment = await this.services.data.setCurrentMerges(newValue);
+        const inputId = 'merge';
         
-        // Show increment if there was one
-        if (increment > 0) {
-            this.showMergeIncrement(increment);
+        // Clear existing debounce timer
+        if (this.inputDebounceTimers.has(inputId)) {
+            clearTimeout(this.inputDebounceTimers.get(inputId));
         }
         
-        this.updateCalculationsAndSave();
+        // Debounce rapid input changes
+        this.inputDebounceTimers.set(inputId, setTimeout(async () => {
+            await this.processInputChange(inputId, e, async () => {
+                const newValue = parseInt(e.target.value) || 0;
+                const increment = await this.services.data.setCurrentMerges(newValue);
+                
+                // Show increment if there was one
+                if (increment > 0) {
+                    this.showMergeIncrement(increment);
+                }
+                
+                return { success: true, increment };
+            });
+        }, 150)); // 150ms debounce for better responsiveness
     }
 
-    handleRateInput(e) {
-        const newValue = parseFloat(e.target.value) || 0;
-        this.services.data.setMergeRatePer10Min(newValue);
-        this.updateCalculationsAndSave();
+    async handleRateInput(e) {
+        const inputId = 'rate';
+        
+        // Clear existing debounce timer
+        if (this.inputDebounceTimers.has(inputId)) {
+            clearTimeout(this.inputDebounceTimers.get(inputId));
+        }
+        
+        // Debounce rapid input changes
+        this.inputDebounceTimers.set(inputId, setTimeout(async () => {
+            await this.processInputChange(inputId, e, async () => {
+                const newValue = parseFloat(e.target.value) || 0;
+                this.services.data.setMergeRatePer10Min(newValue);
+                return { success: true };
+            });
+        }, 300)); // Longer debounce for rate changes
     }
 
-    handleTargetInput(e) {
-        const newValue = parseInt(e.target.value) || 50000;
-        this.services.data.setTargetGoal(newValue);
-        this.updateCalculationsAndSave();
+    async handleTargetInput(e) {
+        const inputId = 'target';
+        
+        // Clear existing debounce timer
+        if (this.inputDebounceTimers.has(inputId)) {
+            clearTimeout(this.inputDebounceTimers.get(inputId));
+        }
+        
+        // Debounce rapid input changes
+        this.inputDebounceTimers.set(inputId, setTimeout(async () => {
+            await this.processInputChange(inputId, e, async () => {
+                const newValue = parseInt(e.target.value) || 50000;
+                this.services.data.setTargetGoal(newValue);
+                return { success: true };
+            });
+        }, 300)); // Longer debounce for target changes
     }
 
     async handleResetState() {
@@ -124,7 +172,7 @@ class AppController {
             await this.services.data.saveCurrentProgress();
             
             // Update the UI to reflect the changes
-            this.updateCalculationsAndSave();
+            await this.updateCalculationsAndSave();
             
             alert('Merge count successfully synced!');
         } catch (error) {
@@ -144,6 +192,112 @@ class AppController {
         setTimeout(() => {
             incrementDisplay.classList.remove('show');
         }, 3000);
+    }
+    
+    // Enhanced input processing with loading states and error handling
+    async processInputChange(inputId, event, processingFunction) {
+        // Prevent concurrent processing of the same input
+        if (this.updateInProgress) {
+            this.pendingUpdates.add(inputId);
+            return;
+        }
+        
+        this.updateInProgress = true;
+        this.setLoadingState(inputId, true);
+        this.clearErrorState(inputId);
+        
+        try {
+            // Execute the input-specific processing
+            const result = await processingFunction();
+            
+            if (result && result.success) {
+                // Update calculations and save
+                await this.updateCalculationsAndSave();
+                
+                // Show success feedback if provided
+                if (result.feedback) {
+                    this.showInputFeedback(inputId, result.feedback, 'success');
+                }
+            }
+            
+            // Process any pending updates for this input
+            if (this.pendingUpdates.has(inputId)) {
+                this.pendingUpdates.delete(inputId);
+                // Schedule re-processing with current value
+                setTimeout(() => {
+                    event.target.dispatchEvent(new Event('input'));
+                }, 100);
+            }
+            
+        } catch (error) {
+            console.error(`Error processing ${inputId} input:`, error);
+            this.setErrorState(inputId, error.message);
+            this.showInputFeedback(inputId, 'Error updating value', 'error');
+            
+        } finally {
+            this.setLoadingState(inputId, false);
+            this.updateInProgress = false;
+        }
+    }
+    
+    // UI state management methods
+    setLoadingState(componentId, isLoading) {
+        this.loadingStates.set(componentId, isLoading);
+        
+        // Visual feedback for loading state
+        const element = this.getInputElement(componentId);
+        if (element) {
+            if (isLoading) {
+                element.classList.add('loading');
+                element.disabled = true;
+            } else {
+                element.classList.remove('loading');
+                element.disabled = false;
+            }
+        }
+    }
+    
+    setErrorState(componentId, errorMessage) {
+        this.errorStates.set(componentId, errorMessage);
+        
+        // Visual feedback for error state
+        const element = this.getInputElement(componentId);
+        if (element) {
+            element.classList.add('error');
+            setTimeout(() => {
+                element.classList.remove('error');
+            }, 3000);
+        }
+    }
+    
+    clearErrorState(componentId) {
+        this.errorStates.delete(componentId);
+        
+        const element = this.getInputElement(componentId);
+        if (element) {
+            element.classList.remove('error');
+        }
+    }
+    
+    getInputElement(inputId) {
+        switch (inputId) {
+            case 'merge':
+                return this.services.display.elements.currentMerges;
+            case 'rate':
+                return this.services.display.elements.mergeRate;
+            case 'target':
+                return this.services.display.elements.targetGoal;
+            default:
+                return null;
+        }
+    }
+    
+    showInputFeedback(inputId, message, type = 'info') {
+        // Simple feedback system - can be enhanced with toast notifications
+        console.log(`${type.toUpperCase()}: ${inputId} - ${message}`);
+        
+        // You could add visual feedback here, like a tooltip or toast
+        // For now, we rely on CSS classes and console logging
     }
 
 
@@ -174,7 +328,7 @@ class AppController {
                     mergeInput.value = this.services.data.getCurrentMerges();
                     this.services.display.addPulseEffect(mergeInput);
                     
-                    this.updateCalculationsAndSave();
+                    await this.updateCalculationsAndSave();
                 }
             }
         });
@@ -392,11 +546,55 @@ class AppController {
         }
     }
 
-    updateCalculationsAndSave() {
-        this.updateCalculations();
-        this.saveData();
-        this.updateCharts();
-        this.updateStreakDisplays();
+    async updateCalculationsAndSave() {
+        // Add this operation to the UI update queue
+        return new Promise((resolve, reject) => {
+            this.uiUpdateQueue.push(async () => {
+                try {
+                    // Update calculations (synchronous)
+                    this.updateCalculations();
+                    
+                    // Save data and wait for completion
+                    await this.saveData();
+                    
+                    // Update displays
+                    this.updateCharts();
+                    
+                    resolve();
+                    
+                } catch (error) {
+                    console.error('Error in updateCalculationsAndSave:', error);
+                    // Don't throw - ensure UI remains responsive
+                    resolve(); // Resolve anyway to prevent blocking
+                }
+            });
+            
+            // Process the queue if not already processing
+            this.processUIUpdateQueue();
+        });
+    }
+    
+    // Process UI updates sequentially to prevent race conditions
+    async processUIUpdateQueue() {
+        if (this.processingUIQueue) {
+            return; // Already processing
+        }
+        
+        this.processingUIQueue = true;
+        
+        try {
+            while (this.uiUpdateQueue.length > 0) {
+                const updateFunction = this.uiUpdateQueue.shift();
+                try {
+                    await updateFunction();
+                } catch (error) {
+                    console.error('Error processing UI update:', error);
+                    // Continue processing other updates
+                }
+            }
+        } finally {
+            this.processingUIQueue = false;
+        }
     }
 
     updateCalculations() {
@@ -459,6 +657,7 @@ class AppController {
             await this.services.data.saveCurrentProgress();
         } catch (error) {
             console.error('Error saving data:', error);
+            throw error; // Re-throw to let caller handle
         }
     }
 
@@ -548,99 +747,6 @@ class AppController {
         return this.services;
     }
 
-    // Streak Display Integration Methods
-    async initializeStreakDisplays() {
-        try {
-            // Create streak badge in the main interface
-            const headerSection = document.querySelector('.progress-display') || 
-                                 document.querySelector('.header-section') ||
-                                 document.querySelector('#current-progress');
-            
-            if (headerSection) {
-                // Load current streak data
-                const streakSummary = await this.services.data.getStreakSummary();
-                const currentStreak = streakSummary ? streakSummary.currentStreak : 0;
-                
-                // Create the streak badge
-                this.services.streakDisplay.createCurrentStreakBadge(headerSection, currentStreak);
-            }
-
-            // Create streak metrics card in analytics section
-            const analyticsSection = document.querySelector('.analytics-section') || 
-                                   document.querySelector('#analytics-section') ||
-                                   document.querySelector('.metrics-container');
-            
-            if (analyticsSection) {
-                const streakSummary = await this.services.data.getStreakSummary();
-                const defaultStreakData = {
-                    currentStreak: 0,
-                    longestStreak: 0,
-                    totalDaysAchieved: 0
-                };
-                
-                const streakData = streakSummary || defaultStreakData;
-                this.services.streakDisplay.createStreakMetricsCard(analyticsSection, streakData);
-            }
-
-            console.log('Streak displays initialized successfully');
-        } catch (error) {
-            console.error('Error initializing streak displays:', error);
-        }
-    }
-
-    async updateStreakDisplays() {
-        try {
-            // Load latest streak data
-            const streakSummary = await this.services.data.getStreakSummary();
-            
-            if (streakSummary) {
-                // Update streak badge
-                this.services.streakDisplay.updateStreakBadge(streakSummary.currentStreak);
-                
-                // Update streak metrics card
-                this.services.streakDisplay.updateStreakMetrics(streakSummary);
-                
-                // Check for milestone celebrations
-                this.checkStreakMilestones(streakSummary.currentStreak);
-            }
-        } catch (error) {
-            console.error('Error updating streak displays:', error);
-        }
-    }
-
-    checkStreakMilestones(currentStreak) {
-        // Check for milestone achievements (7, 14, 30, etc.)
-        const milestones = [7, 14, 30, 50, 100];
-        
-        if (milestones.includes(currentStreak)) {
-            this.showMilestoneNotification(currentStreak);
-        }
-    }
-
-    showMilestoneNotification(streakLength) {
-        // Create a temporary notification for streak milestones
-        const notification = document.createElement('div');
-        notification.className = 'streak-milestone-notification';
-        notification.innerHTML = `
-            <div class="milestone-icon">🎉</div>
-            <div class="milestone-text">
-                <div class="milestone-title">${streakLength} Day Streak!</div>
-                <div class="milestone-message">Amazing consistency! Keep it up!</div>
-            </div>
-        `;
-        
-        // Add to body
-        document.body.appendChild(notification);
-        
-        // Animate in
-        setTimeout(() => notification.classList.add('show'), 100);
-        
-        // Remove after 5 seconds
-        setTimeout(() => {
-            notification.classList.remove('show');
-            setTimeout(() => document.body.removeChild(notification), 300);
-        }, 5000);
-    }
 }
 
 // Export for use in other modules

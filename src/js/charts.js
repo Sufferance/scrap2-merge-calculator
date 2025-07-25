@@ -243,8 +243,7 @@ class ProgressCharts {
                                 
                                 return [
                                     `Daily Target: ${dailyTarget.toLocaleString()}`,
-                                    `Status: ${achieved ? '✅ Target Achieved' : '⭕ Below Target'}`,
-                                    achieved ? `Contributes to streak` : `Breaks streak`
+                                    `Status: ${achieved ? '✅ Target Achieved' : '⭕ Below Target'}`
                                 ];
                             },
                             labelColor: function(context) {

@@ -307,6 +307,12 @@ class CalculationService {
     }
 
     calculateCurrentDayTotal(currentMerges, weekStartDate, dailyHistory) {
+        // Input validation
+        if (!this.validateCalculationInputs(currentMerges, weekStartDate)) {
+            console.warn('CalculationService: Invalid inputs for calculateCurrentDayTotal');
+            return this.getDefaultCurrentDayResult(weekStartDate);
+        }
+        
         const now = new Date();
         const weekId = this.getWeekId(weekStartDate);
         const daysSinceStart = this.getDayIndexSince5pm(weekStartDate, now);
@@ -315,28 +321,218 @@ class CalculationService {
         const dayDate = new Date(weekStartDate);
         dayDate.setDate(weekStartDate.getDate() + daysSinceStart);
         const today = dayDate.toDateString();
-        
-        // Calculate how many merges belong to previous days
+
+        // Calculate how many merges belong to previous days with improved accuracy
         let previousDaysMerges = 0;
-        for (let i = 0; i < daysSinceStart; i++) {
-            const prevDate = new Date(weekStartDate);
-            prevDate.setDate(weekStartDate.getDate() + i);
-            const prevDateKey = prevDate.toDateString();
-            const prevDayTotal = dailyHistory?.[weekId]?.[prevDateKey];
-            if (prevDayTotal !== undefined) {
-                previousDaysMerges = Math.max(previousDaysMerges, prevDayTotal);
+        if (daysSinceStart > 0) {
+            // Get yesterday's date (most recent completed day)
+            const yesterdayDate = new Date(weekStartDate);
+            yesterdayDate.setDate(weekStartDate.getDate() + (daysSinceStart - 1));
+            const yesterdayKey = yesterdayDate.toDateString();
+            const yesterdayTotal = dailyHistory?.[weekId]?.[yesterdayKey];
+            
+            if (yesterdayTotal !== undefined) {
+                // Handle both old format (number) and new format (object with mergeTotal)
+                previousDaysMerges = typeof yesterdayTotal === 'number' ? 
+                    yesterdayTotal : (yesterdayTotal.mergeTotal || 0);
+                
+                // Validate previous day merge count
+                if (!Number.isFinite(previousDaysMerges) || previousDaysMerges < 0) {
+                    console.warn(`CalculationService: Invalid previous day merges for ${yesterdayKey}: ${previousDaysMerges}, defaulting to 0`);
+                    previousDaysMerges = 0;
+                }
             }
         }
         
-        // Calculate today's total
+        // Calculate today's total with validation
         const todaysMerges = Math.max(0, currentMerges - previousDaysMerges);
+        
+        // Consistency check: today's merges shouldn't exceed current total
+        if (todaysMerges > currentMerges) {
+            console.warn(`CalculationService: Inconsistent daily merge calculation. Today: ${todaysMerges}, Total: ${currentMerges}`);
+        }
         
         return {
             weekId,
             today,
             todaysMerges,
-            previousDaysMerges
+            previousDaysMerges,
+            isValid: true
         };
+    }
+    
+    // Validation methods for calculation inputs
+    validateCalculationInputs(currentMerges, weekStartDate) {
+        // Validate current merges
+        if (typeof currentMerges !== 'number' || !Number.isFinite(currentMerges) || currentMerges < 0) {
+            console.error('CalculationService: Invalid currentMerges:', currentMerges);
+            return false;
+        }
+        
+        // Validate week start date
+        if (!weekStartDate || !(weekStartDate instanceof Date) || isNaN(weekStartDate.getTime())) {
+            console.error('CalculationService: Invalid weekStartDate:', weekStartDate);
+            return false;
+        }
+        
+        return true;
+    }
+    
+    validateMergeRateInputs(mergeRatePer10Min, targetGoal) {
+        // Validate merge rate
+        if (typeof mergeRatePer10Min !== 'number' || !Number.isFinite(mergeRatePer10Min) || mergeRatePer10Min < 0) {
+            console.error('CalculationService: Invalid mergeRatePer10Min:', mergeRatePer10Min);
+            return false;
+        }
+        
+        // Validate target goal
+        if (typeof targetGoal !== 'number' || !Number.isFinite(targetGoal) || targetGoal <= 0) {
+            console.error('CalculationService: Invalid targetGoal:', targetGoal);
+            return false;
+        }
+        
+        return true;
+    }
+    
+    getDefaultCurrentDayResult(weekStartDate) {
+        const now = new Date();
+        const weekId = weekStartDate ? this.getWeekId(weekStartDate) : 'unknown';
+        const today = now.toDateString();
+        
+        return {
+            weekId,
+            today,
+            todaysMerges: 0,
+            previousDaysMerges: 0,
+            isValid: false
+        };
+    }
+    
+    // Enhanced daily target calculation with consistency checks
+    calculateDailyTarget(targetGoal, daysInWeek = 7) {
+        if (!this.validateMergeRateInputs(1, targetGoal)) {
+            console.warn('CalculationService: Invalid target goal for daily calculation, using default');
+            return Math.ceil(50000 / 7); // Default fallback
+        }
+        
+        const dailyTarget = Math.ceil(targetGoal / daysInWeek);
+        
+        // Consistency check: daily target should be reasonable
+        if (dailyTarget > targetGoal) {
+            console.warn(`CalculationService: Daily target (${dailyTarget}) exceeds total goal (${targetGoal})`);
+        }
+        
+        return dailyTarget;
+    }
+    
+    // Data consistency validation between cumulative and daily values
+    validateDailyProgressConsistency(dailyHistory, weekId) {
+        const issues = [];
+        
+        if (!dailyHistory || !dailyHistory[weekId]) {
+            return { isValid: true, issues: [] };
+        }
+        
+        const weekData = dailyHistory[weekId];
+        const dates = Object.keys(weekData).sort();
+        let expectedCumulative = 0;
+        
+        for (let i = 0; i < dates.length; i++) {
+            const dateStr = dates[i];
+            const dayData = weekData[dateStr];
+            
+            if (typeof dayData === 'number') {
+                // Legacy format - assume it's cumulative
+                if (i > 0 && dayData < expectedCumulative) {
+                    issues.push({
+                        date: dateStr,
+                        issue: 'cumulative_decrease',
+                        expected: expectedCumulative,
+                        actual: dayData
+                    });
+                }
+                expectedCumulative = dayData;
+            } else if (dayData && typeof dayData === 'object') {
+                // New format - check consistency
+                const { merges, mergeTotal } = dayData;
+                
+                if (typeof merges === 'number' && typeof mergeTotal === 'number') {
+                    expectedCumulative += merges;
+                    
+                    if (Math.abs(mergeTotal - expectedCumulative) > 1) { // Allow for small rounding errors
+                        issues.push({
+                            date: dateStr,
+                            issue: 'cumulative_mismatch',
+                            expected: expectedCumulative,
+                            actual: mergeTotal,
+                            dailyMerges: merges
+                        });
+                    }
+                    
+                    expectedCumulative = mergeTotal; // Use actual value for next iteration
+                }
+                
+                // Validate achievement flag consistency
+                if (typeof merges === 'number' && typeof dayData.dailyTarget === 'number') {
+                    const expectedAchievement = merges >= dayData.dailyTarget;
+                    if (dayData.achievedTarget !== expectedAchievement) {
+                        issues.push({
+                            date: dateStr,
+                            issue: 'achievement_flag_mismatch',
+                            expected: expectedAchievement,
+                            actual: dayData.achievedTarget,
+                            merges,
+                            dailyTarget: dayData.dailyTarget
+                        });
+                    }
+                }
+            }
+        }
+        
+        return {
+            isValid: issues.length === 0,
+            issues,
+            totalDaysChecked: dates.length
+        };
+    }
+    
+    // Enhanced merge requirements calculation with validation
+    calculateMergeRequirementsWithValidation(currentMerges, targetGoal, mergeRatePer10Min, weekStartDate, weekEndDate) {
+        // Input validation
+        if (!this.validateCalculationInputs(currentMerges, weekStartDate)) {
+            return null;
+        }
+        
+        if (!this.validateMergeRateInputs(mergeRatePer10Min, targetGoal)) {
+            return null;
+        }
+        
+        if (!weekEndDate || !(weekEndDate instanceof Date) || isNaN(weekEndDate.getTime())) {
+            console.error('CalculationService: Invalid weekEndDate:', weekEndDate);
+            return null;
+        }
+        
+        // Perform calculation with validation
+        const result = this.calculateMergeRequirements(currentMerges, targetGoal, mergeRatePer10Min, weekStartDate, weekEndDate);
+        
+        // Add validation flags
+        result.inputsValid = true;
+        result.calculationWarnings = [];
+        
+        // Check for edge cases
+        if (result.hoursRequired > result.hoursRemaining * 2) {
+            result.calculationWarnings.push('Very high play time required - check merge rate accuracy');
+        }
+        
+        if (result.mergeRatePerHour === 0) {
+            result.calculationWarnings.push('Zero merge rate - calculations may be inaccurate');
+        }
+        
+        if (result.mergesNeeded <= 0) {
+            result.calculationWarnings.push('Goal already achieved');
+        }
+        
+        return result;
     }
 }
 

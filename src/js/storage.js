@@ -21,7 +21,6 @@ class StorageManager {
             request.onsuccess = () => {
                 this.db = request.result;
                 this.isInitialized = true;
-                console.log('Database opened successfully');
                 resolve();
             };
 
@@ -36,9 +35,6 @@ class StorageManager {
         // Handle incremental database upgrades
         if (oldVersion < 1) {
             this.createInitialObjectStores();
-        }
-        if (oldVersion < 3) {
-            this.createStreakObjectStore();
         }
     }
 
@@ -62,13 +58,6 @@ class StorageManager {
         }
     }
 
-    createStreakObjectStore() {
-        // Streak summary store (added in version 3)
-        if (!this.db.objectStoreNames.contains('streakSummary')) {
-            const streakStore = this.db.createObjectStore('streakSummary', { keyPath: 'id' });
-            console.log('Created streakSummary object store');
-        }
-    }
 
     async saveCurrentProgress(progressData) {
         if (!this.isInitialized) await this.initialize();
@@ -167,9 +156,6 @@ class StorageManager {
 
         return new Promise((resolve, reject) => {
             const storeNames = ['currentProgress', 'settings', 'weeklyHistory'];
-            if (this.db.objectStoreNames.contains('streakSummary')) {
-                storeNames.push('streakSummary');
-            }
             const transaction = this.db.transaction(storeNames, 'readwrite');
             
             const currentProgressStore = transaction.objectStore('currentProgress');
@@ -182,10 +168,6 @@ class StorageManager {
                 historyStore.clear()
             ];
             
-            if (this.db.objectStoreNames.contains('streakSummary')) {
-                const streakStore = transaction.objectStore('streakSummary');
-                clearPromises.push(streakStore.clear());
-            }
             
             transaction.oncomplete = () => resolve();
             transaction.onerror = () => reject(transaction.error);
@@ -197,16 +179,10 @@ class StorageManager {
 
         const currentProgress = await this.loadCurrentProgress();
         const weeklyHistory = await this.loadWeeklyHistory();
-        let streakSummary = null;
-        
-        if (this.db.objectStoreNames.contains('streakSummary')) {
-            streakSummary = await this.loadStreakSummary();
-        }
         
         return {
             currentProgress,
             weeklyHistory,
-            streakSummary,
             exportedAt: new Date().toISOString(),
             version: 3
         };
@@ -225,43 +201,8 @@ class StorageManager {
             }
         }
         
-        if (data.streakSummary && this.db.objectStoreNames.contains('streakSummary')) {
-            await this.saveStreakSummary(data.streakSummary);
-        }
     }
 
-    async saveStreakSummary(streakData) {
-        if (!this.isInitialized) await this.initialize();
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['streakSummary'], 'readwrite');
-            const store = transaction.objectStore('streakSummary');
-            
-            const data = {
-                id: 'current',
-                ...streakData,
-                lastUpdated: new Date().toISOString()
-            };
-
-            const request = store.put(data);
-            
-            request.onsuccess = () => resolve();
-            request.onerror = () => reject(request.error);
-        });
-    }
-
-    async loadStreakSummary() {
-        if (!this.isInitialized) await this.initialize();
-
-        return new Promise((resolve, reject) => {
-            const transaction = this.db.transaction(['streakSummary'], 'readonly');
-            const store = transaction.objectStore('streakSummary');
-            const request = store.get('current');
-            
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
-    }
 }
 
 // Export for use in main app
