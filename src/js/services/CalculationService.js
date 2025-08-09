@@ -83,6 +83,11 @@ class CalculationService {
         return Math.min(100, (currentMerges / targetGoal) * 100);
     }
 
+    calculateMergesNeededPerDay(mergesNeeded, daysRemaining) {
+        if (daysRemaining <= 0) return 0;
+        return Math.ceil(mergesNeeded / daysRemaining);
+    }
+
     calculateTimeDisplay(hours) {
         const totalHours = Math.floor(hours);
         const totalMinutes = Math.round((hours - totalHours) * 60);

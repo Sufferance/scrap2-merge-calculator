@@ -20,6 +20,7 @@ class DisplayManager {
             
             // Result elements
             mergesNeeded: document.getElementById('merges-needed'),
+            mergesPerDay: document.getElementById('merges-per-day'),
             hoursRequired: document.getElementById('hours-required'),
             hoursPerDay: document.getElementById('hours-per-day'),
             onTrackStatus: document.getElementById('on-track-status'),
@@ -99,6 +100,7 @@ class DisplayManager {
             mergesNeeded,
             hoursRequired,
             averageHoursPerDay,
+            daysRemaining,
             currentPace,
             requiredPace,
             statusInfo
@@ -107,6 +109,11 @@ class DisplayManager {
         // Update result values
         if (this.elements.mergesNeeded) {
             this.elements.mergesNeeded.textContent = mergesNeeded.toLocaleString();
+        }
+        
+        if (this.elements.mergesPerDay) {
+            const mergesPerDay = this.calculationService.calculateMergesNeededPerDay(mergesNeeded, daysRemaining);
+            this.elements.mergesPerDay.textContent = `Per day: ${mergesPerDay.toLocaleString()}`;
         }
         
         if (this.elements.hoursRequired) {

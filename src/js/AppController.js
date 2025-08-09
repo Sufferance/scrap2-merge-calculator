@@ -435,6 +435,7 @@ class AppController {
             mergesNeeded: mergeRequirements.mergesNeeded,
             hoursRequired: mergeRequirements.hoursRequired,
             averageHoursPerDay: mergeRequirements.averageHoursPerDay,
+            daysRemaining: mergeRequirements.daysRemaining,
             currentPace: paceTracking.currentPace,
             requiredPace: paceTracking.requiredPace,
             statusInfo: statusInfo
