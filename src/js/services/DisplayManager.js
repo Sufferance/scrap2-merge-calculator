@@ -20,6 +20,7 @@ class DisplayManager {
             
             // Result elements
             mergesNeeded: document.getElementById('merges-needed'),
+            mergesToCatchUp: document.getElementById('merges-to-catch-up'),
             hoursRequired: document.getElementById('hours-required'),
             hoursPerDay: document.getElementById('hours-per-day'),
             onTrackStatus: document.getElementById('on-track-status'),
@@ -101,12 +102,24 @@ class DisplayManager {
             averageHoursPerDay,
             currentPace,
             requiredPace,
-            statusInfo
+            statusInfo,
+            mergesToGetOnTrack
         } = results;
 
         // Update result values
         if (this.elements.mergesNeeded) {
             this.elements.mergesNeeded.textContent = mergesNeeded.toLocaleString();
+        }
+        
+        // Update merges to catch up display
+        if (this.elements.mergesToCatchUp && mergesToGetOnTrack) {
+            if (mergesToGetOnTrack.isOnTrack) {
+                this.elements.mergesToCatchUp.textContent = 'On track!';
+                this.elements.mergesToCatchUp.style.color = '#4ade80';
+            } else {
+                this.elements.mergesToCatchUp.textContent = mergesToGetOnTrack.mergesBehind.toLocaleString();
+                this.elements.mergesToCatchUp.style.color = '#fb923c';
+            }
         }
         
         if (this.elements.hoursRequired) {

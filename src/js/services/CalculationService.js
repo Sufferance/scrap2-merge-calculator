@@ -79,6 +79,23 @@ class CalculationService {
         };
     }
 
+    calculateMergesToGetOnTrack(currentMerges, targetGoal, weekStartDate, weekEndDate) {
+        const now = new Date();
+        const timeSinceWeekStart = now - weekStartDate;
+        const totalWeekTime = weekEndDate - weekStartDate;
+        
+        const progressRatio = timeSinceWeekStart / totalWeekTime;
+        const expectedMerges = progressRatio * targetGoal;
+        
+        const mergesBehind = Math.max(0, expectedMerges - currentMerges);
+        
+        return {
+            expectedMerges: Math.round(expectedMerges),
+            mergesBehind: Math.round(mergesBehind),
+            isOnTrack: mergesBehind <= 0
+        };
+    }
+
     calculateProgressPercentage(currentMerges, targetGoal) {
         return Math.min(100, (currentMerges / targetGoal) * 100);
     }
