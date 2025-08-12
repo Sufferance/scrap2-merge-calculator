@@ -418,6 +418,14 @@ class AppController {
             mergeRequirements.hoursRemaining
         );
 
+        // Calculate merges to get on track
+        const mergesToGetOnTrack = this.services.calculation.calculateMergesToGetOnTrack(
+            currentMerges,
+            targetGoal,
+            weekStartDate,
+            weekEndDate
+        );
+
         // Calculate status
         const statusInfo = this.services.calculation.calculateEnhancedStatus(
             currentMerges,
@@ -435,10 +443,10 @@ class AppController {
             mergesNeeded: mergeRequirements.mergesNeeded,
             hoursRequired: mergeRequirements.hoursRequired,
             averageHoursPerDay: mergeRequirements.averageHoursPerDay,
-            daysRemaining: mergeRequirements.daysRemaining,
             currentPace: paceTracking.currentPace,
             requiredPace: paceTracking.requiredPace,
-            statusInfo: statusInfo
+            statusInfo: statusInfo,
+            mergesToGetOnTrack: mergesToGetOnTrack
         });
 
         // Update predictive finish time

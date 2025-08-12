@@ -79,13 +79,25 @@ class CalculationService {
         };
     }
 
-    calculateProgressPercentage(currentMerges, targetGoal) {
-        return Math.min(100, (currentMerges / targetGoal) * 100);
+    calculateMergesToGetOnTrack(currentMerges, targetGoal, weekStartDate, weekEndDate) {
+        const now = new Date();
+        const timeSinceWeekStart = now - weekStartDate;
+        const totalWeekTime = weekEndDate - weekStartDate;
+        
+        const progressRatio = timeSinceWeekStart / totalWeekTime;
+        const expectedMerges = progressRatio * targetGoal;
+        
+        const mergesBehind = Math.max(0, expectedMerges - currentMerges);
+        
+        return {
+            expectedMerges: Math.round(expectedMerges),
+            mergesBehind: Math.round(mergesBehind),
+            isOnTrack: mergesBehind <= 0
+        };
     }
 
-    calculateMergesNeededPerDay(mergesNeeded, daysRemaining) {
-        if (daysRemaining <= 0) return 0;
-        return Math.ceil(mergesNeeded / daysRemaining);
+    calculateProgressPercentage(currentMerges, targetGoal) {
+        return Math.min(100, (currentMerges / targetGoal) * 100);
     }
 
     calculateTimeDisplay(hours) {

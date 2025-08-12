@@ -446,6 +446,28 @@ body {
     color: var(--text-primary);
 }
 
+.merges-catchup {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.catchup-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.catchup-value {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
 .result-value.status {
     font-size: 1.2rem;
     padding: 0.5rem 1rem;
@@ -736,6 +758,14 @@ body {
     
     .result-value {
         font-size: 1.3rem;
+    }
+    
+    .catchup-value {
+        font-size: 1rem;
+    }
+    
+    .catchup-label {
+        font-size: 0.75rem;
     }
 }
 
